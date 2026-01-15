@@ -1,0 +1,93 @@
+import { Request, Response } from 'express';
+
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt.ts';
+import { validatePartialUser } from '../schemas/users.ts';
+import logger from '../utils/logger.ts';
+import { config } from '../config/index.ts';
+import userRepository from '../repositories/user.repository.ts';
+import { AppError } from '../errors/AppError.ts';
+
+export class AuthController {
+  async login(req: Request, res: Response) {
+    const { username = '', email = '', password } = req.body;
+
+    const input = username ? { username, password } : { email, password };
+    const validation = validatePartialUser(input);
+    if (!validation.success) {
+      const errorMsg = JSON.parse(validation.error.message)[0]?.message;
+      throw new AppError(errorMsg || 'Datos inválidos', 400);
+    }
+
+    const userResult = await userRepository.login(input);
+
+    if ('error' in userResult) {
+      // Caso especial: debe cambiar contraseña
+      if (userResult.error === 'Debes cambiar la contraseña en tu primer login') {
+        // Devuelve 403 con indicador para frontend
+        return res.status(403).json({
+          success: false,
+          error: userResult.error,
+          mustChangePassword: true,
+          message:
+            'Tu cuenta requiere cambio de contraseña inicial. Usa /user/chgpass con el access_token actual.',
+        });
+      }
+
+      logger.warn('Intento de login fallido', { input: { ...input, password: '***' } });
+      throw new AppError(userResult.error, 401);
+    }
+
+    const user = userResult;
+
+    // Si llegó aquí, login OK y no necesita cambio obligatorio
+    const payload = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      fullname: user.fullname,
+      level: user.level,
+      active: user.active,
+    };
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    // Guardamos el refresh token en DB
+    await userRepository.saveRefreshToken({
+      userId: user.id,
+      token: refreshToken,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: config.nodeEnv === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: config.nodeEnv === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const { password: _, ...publicUser } = user;
+    return res.status(200).json({ success: true, user: publicUser });
+  }
+
+  logout(req: Request, res: Response) {
+    const user = req.user;
+
+    if (user) {
+      userRepository.revokeRefreshToken(user.id);
+    }
+
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    return res.status(200).json({ success: true, message: 'Sesión cerrada correctamente' });
+  }
+}

@@ -1,0 +1,67 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+.pnpm-debug.log
+
+# Archivos de compilación y salida
+dist/
+build/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Entorno y secretos
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# Editor y sistema operativo
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Tests y cobertura
+coverage/
+.nyc_output/
+test-results/
+vitest-report/
+
+# Archivos temporales y caché
+*.swp
+*.swo
+*.tmp
+*.bak
+*.txt
+*.http
+*.cache
+.eslintcache
+.prettierrc.cache
+
+# PostgreSQL / bases de datos locales (por si exportas dumps)
+*.sql.dump
+*.dump
+pgdata/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Opcional: si usas Prisma, Drizzle u otras migraciones
+prisma/migrations/*
+drizzle/
+migrations/
+
+# Archivos generados por herramientas
+tsconfig.tsbuildinfo
+.eslintrc.js.cache
