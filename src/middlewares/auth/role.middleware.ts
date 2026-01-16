@@ -4,8 +4,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 
-import { AppError } from '../../errors/AppError.ts';
-import logger from '../../utils/logger.ts';
+import { AppError } from '../../errors/AppError.js';
+import logger from '../../utils/logger.js';
 
 /**
  * Middleware para validar nivel de usuario (roles/permisos)
@@ -13,17 +13,17 @@ import logger from '../../utils/logger.ts';
  */
 export const restrictTo = (requiredLevel: number) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    if (!(req as any).user) {
       return next(new AppError('No autorizado - usuario no encontrado', 401));
     }
 
-    if (req.user.level < requiredLevel) {
-      logger.warn('Acceso denegado por nivel insuficiente', {
-        userId: req.user.id,
-        userLevel: req.user.level,
+    if ((req as any).user.level < requiredLevel) {
+      logger.warn({
+        userId: (req as any).user.id,
+        userLevel: (req as any).user.level,
         requiredLevel,
         path: req.path,
-      });
+      }, 'Acceso denegado por nivel insuficiente');
       return next(new AppError('No tienes permisos suficientes para esta acción', 403));
     }
 

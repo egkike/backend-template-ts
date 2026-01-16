@@ -1,8 +1,8 @@
 // Conexión al pool de PostgreSQL, tipada y con parseo correcto de tipos numéricos.
 import { Pool, types } from 'pg';
 
-import { config } from '../config/index.ts';
-import logger from '../utils/logger.ts';
+import { config } from '../config/index.js';
+import logger from '../utils/logger.js';
 
 // Configuramos el parseo de tipos numéricos de PostgreSQL como números JS
 types.setTypeParser(types.builtins.NUMERIC, (value: string) => parseFloat(value));
@@ -21,7 +21,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err, client) => {
-  logger.error('Error inesperado en el pool de PostgreSQL', { error: err.message });
+  logger.error({ error: err.message }, 'Error inesperado en el pool de PostgreSQL');
 });
 
 // Función para verificar conexión al iniciar (opcional pero útil)
@@ -31,7 +31,7 @@ pool.on('error', (err, client) => {
     logger.info('Conexión a PostgreSQL establecida correctamente');
     client.release();
   } catch (error) {
-    logger.error('No se pudo conectar a PostgreSQL al inicio', { error });
+    logger.error({ error }, 'No se pudo conectar a PostgreSQL al inicio');
     process.exit(1); // Salimos si no hay conexión (en producción puedes manejarlo diferente)
   }
 })();

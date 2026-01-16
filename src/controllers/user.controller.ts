@@ -1,15 +1,16 @@
 import { Request, Response } from 'express';
 
-import { validatePartialUser, validatePasswordDetailed } from '../schemas/users.ts';
-import logger from '../utils/logger.ts';
-import userRepository from '../repositories/user.repository.ts';
-import { AppError } from '../errors/AppError.ts';
+import { validatePartialUser, validatePasswordDetailed } from '../schemas/users.js';
+//import logger from '../utils/logger.js';
+import userRepository from '../repositories/user.repository.js';
+import type { User } from '../repositories/user.repository.js';
+import { AppError } from '../errors/AppError.js';
 
 export class UserController {
   getSession(req: Request, res: Response) {
     return res.status(200).json({
       success: true,
-      user: req.user,
+      user: (req as any).user,
     });
   }
 
@@ -46,18 +47,28 @@ export class UserController {
       throw new AppError(errorMsg || 'Datos inválidos', 400);
     }
 
-    const pwdCheck = validatePasswordDetailed(validation.data.password);
+    const password = validation.data.password;
+    if (!password) {
+      throw new AppError('La contraseña es requerida', 400);
+    }
+    const pwdCheck = validatePasswordDetailed(password);
     if (!pwdCheck.valid) {
       throw new AppError(pwdCheck.errors?.join('; ') || 'Contraseña inválida', 400);
     }
 
-    const newUser = await userRepository.createUser(validation.data);
+    const newUser = await userRepository.createUser({
+      username: validation.data.username!, // ! = non-null assertion (Zod ya validó que existe)
+      password: validation.data.password!,
+      email: validation.data.email!,
+      fullname: validation.data.fullname!,
+    });
 
     if ('error' in newUser) {
       throw new AppError(newUser.error, 409);
     }
 
-    const { password: _, ...publicUser } = newUser;
+    type PublicUser = Omit<User, 'password'>;
+    const publicUser: PublicUser = newUser;
     return res.status(201).json({ success: true, user: publicUser });
   }
 
@@ -74,8 +85,13 @@ export class UserController {
       throw new AppError(errorMsg || 'Datos inválidos', 400);
     }
 
-    const updated = await userRepository.updUser({ id, input: validation.data });
+    const input = {
+      ...(validation.data.fullname !== undefined && { fullname: validation.data.fullname }),
+      ...(validation.data.level !== undefined && { level: validation.data.level }),
+      ...(validation.data.active !== undefined && { active: validation.data.active }),
+    };
 
+    const updated = await userRepository.updUser({ id, input });
     if ('error' in updated) {
       throw new AppError(updated.error, 404);
     }

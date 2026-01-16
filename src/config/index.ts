@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-import logger from '../utils/logger.ts';
+import logger from '../utils/logger.js';
 
 dotenv.config();
 
@@ -64,10 +64,10 @@ export const config = {
 } as const;
 
 if (config.nodeEnv === 'development') {
-  logger.info('🔧 Configuración cargada (development):', {
+  logger.info({
     port: config.port,
     dbHost: config.db.host,
     jwtAccessExpiry: config.jwt.accessTokenExpiry,
     jwtRefreshExpiry: config.jwt.refreshTokenExpiry,
-  });
+  }, '🔧 Configuración cargada (development):');
 }

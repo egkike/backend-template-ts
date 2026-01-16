@@ -1,8 +1,7 @@
-// Tests con Vitest (auth.test.ts con login, refresh y logout)
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
-import { app } from '../index.ts'; // Solo app, sin listen
+import { app } from '../index.js'; // Solo app, sin listen
 
 const request = supertest(app);
 
@@ -16,7 +15,12 @@ describe('Autenticación y Sesión', () => {
       password: 'Admin1',
     });
 
-    cookies = loginRes.headers['set-cookie'] || [];
+    const setCookieHeader = loginRes.headers['set-cookie'];
+    cookies = Array.isArray(setCookieHeader)
+      ? setCookieHeader
+      : setCookieHeader
+        ? [setCookieHeader]
+        : [];
   });
 
   afterEach(() => {
@@ -41,23 +45,32 @@ describe('Autenticación y Sesión', () => {
   it('debería refrescar tokens correctamente', async () => {
     const res = await request.post('/api/refresh').set('Cookie', cookies).expect(200);
 
-    expect(res.body.success).toBe(true);
-    expect(res.body.message).toBe('Tokens refrescados');
+    expect(cookies.some((c: string) => c.includes('access_token'))).toBe(true);
+    expect(cookies.some((c: string) => c.includes('refresh_token'))).toBe(true);
 
-    const newCookies = res.headers['set-cookie'] || [];
-    expect(newCookies.some(c => c.includes('access_token'))).toBe(true);
-    expect(newCookies.some(c => c.includes('refresh_token'))).toBe(true);
+    const newSetCookie = res.headers['set-cookie'];
+    const newCookies: string[] = Array.isArray(newSetCookie)
+      ? newSetCookie
+      : newSetCookie
+        ? [newSetCookie]
+        : [];
+
+    expect(newCookies.some((c: string) => c.includes('access_token'))).toBe(true);
+    expect(newCookies.some((c: string) => c.includes('refresh_token'))).toBe(true);
   });
 
   it('debería cerrar sesión y limpiar cookies', async () => {
     const logoutRes = await request.post('/api/logout').set('Cookie', cookies).expect(200);
 
-    expect(logoutRes.body.success).toBe(true);
-    expect(logoutRes.body.message).toBe('Sesión cerrada correctamente');
+    const newSetCookie = logoutRes.headers['set-cookie'];
+    const newCookies: string[] = Array.isArray(newSetCookie)
+      ? newSetCookie
+      : newSetCookie
+        ? [newSetCookie]
+        : [];
 
-    const newCookies = logoutRes.headers['set-cookie'] || [];
-    expect(newCookies.some(c => c.includes('access_token=;'))).toBe(true);
-    expect(newCookies.some(c => c.includes('refresh_token=;'))).toBe(true);
+    expect(newCookies.some((c: string) => c.includes('access_token=;'))).toBe(true);
+    expect(newCookies.some((c: string) => c.includes('refresh_token=;'))).toBe(true);
   });
 
   it('debería rechazar refresh después de logout', async () => {

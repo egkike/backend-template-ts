@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 
-import { config } from '../config/index.ts';
+import { config } from '../config/index.js';
 
-import logger from './logger.ts';
+import logger from './logger.js';
 
 export interface UserTokenPayload {
   id: string;
@@ -36,14 +37,14 @@ export function generateAccessToken(rawPayload: Partial<UserTokenPayload>): stri
   try {
     const payload = cleanPayload(rawPayload);
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.accessTokenExpiry || '15m',
+      expiresIn: config.jwt.accessTokenExpiry as StringValue || '15m',
       algorithm: 'HS256',
     });
   } catch (error) {
-    logger.error('Error generando access token', {
+    logger.error({
       error: (error as Error).message,
       stack: (error as Error).stack,
-    });
+    }, 'Error generando access token');
     throw new Error('No se pudo generar el access token');
   }
 }
@@ -55,14 +56,14 @@ export function generateRefreshToken(rawPayload: Partial<UserTokenPayload>): str
   try {
     const payload = cleanPayload(rawPayload);
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.refreshTokenExpiry || '7d',
+      expiresIn: config.jwt.accessTokenExpiry as StringValue || '7d',
       algorithm: 'HS256',
     });
   } catch (error) {
-    logger.error('Error generando refresh token', {
+    logger.error({
       error: (error as Error).message,
       stack: (error as Error).stack,
-    });
+    }, 'Error generando refresh token');
     throw new Error('No se pudo generar el refresh token');
   }
 }
@@ -74,7 +75,7 @@ export function verifyToken(token: string): UserTokenPayload | null {
   try {
     return jwt.verify(token, config.jwt.secret) as UserTokenPayload;
   } catch (error: any) {
-    logger.debug('Token inválido', { name: error.name, message: error.message });
+    logger.debug({ name: error.name, message: error.message }, 'Token inválido');
     return null;
   }
 }

@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt.ts';
-import { validatePartialUser } from '../schemas/users.ts';
-import logger from '../utils/logger.ts';
-import { config } from '../config/index.ts';
-import userRepository from '../repositories/user.repository.ts';
-import { AppError } from '../errors/AppError.ts';
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
+import { validatePartialUser } from '../schemas/users.js';
+import logger from '../utils/logger.js';
+import { config } from '../config/index.js';
+import userRepository from '../repositories/user.repository.js';
+import { AppError } from '../errors/AppError.js';
 
 export class AuthController {
   async login(req: Request, res: Response) {
@@ -33,7 +33,7 @@ export class AuthController {
         });
       }
 
-      logger.warn('Intento de login fallido', { input: { ...input, password: '***' } });
+      logger.warn({ input: { ...input, password: '***' } }, 'Intento de login fallido');
       throw new AppError(userResult.error, 401);
     }
 
@@ -80,7 +80,7 @@ export class AuthController {
   }
 
   logout(req: Request, res: Response) {
-    const user = req.user;
+    const user = (req as any).user;
 
     if (user) {
       userRepository.revokeRefreshToken(user.id);

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { verifyToken } from '../../utils/jwt.ts';
-import logger from '../../utils/logger.ts';
+import { verifyToken } from '../../utils/jwt.js';
+import logger from '../../utils/logger.js';
 
 /**
  * Middleware de autenticación JWT
@@ -13,11 +13,11 @@ export const jwtAuthMiddleware = (req: Request, res: Response, next: NextFunctio
   const token = req.cookies.access_token;
 
   if (!token) {
-    logger.warn('Acceso sin token', {
+    logger.warn({
       path: req.path,
       method: req.method,
       ip: req.ip,
-    });
+    }, 'Acceso sin token');
 
     return res.status(401).json({
       success: false,
@@ -29,10 +29,10 @@ export const jwtAuthMiddleware = (req: Request, res: Response, next: NextFunctio
   const user = verifyToken(token);
 
   if (!user) {
-    logger.warn('Token inválido o expirado', {
+    logger.warn({
       path: req.path,
       method: req.method,
-    });
+    }, 'Token inválido o expirado');
 
     return res.status(401).json({
       success: false,
@@ -41,14 +41,14 @@ export const jwtAuthMiddleware = (req: Request, res: Response, next: NextFunctio
     });
   }
 
-  req.user = user;
+  (req as any).user = user;
 
-  logger.debug(`Autenticación exitosa`, {
+  logger.debug({
     userId: user.id,
     username: user.username,
     level: user.level,
     path: req.path,
-  });
+  }, `Autenticación exitosa`);
 
   next();
 };

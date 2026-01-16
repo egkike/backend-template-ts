@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
-import { app } from '../index.ts';
+import { app } from '../index.js';
 
 const request = supertest(app);
 
@@ -20,14 +20,26 @@ describe('Users API (con permisos)', () => {
       username: 'admin',
       password: 'Admin1',
     });
-    adminCookies = adminLogin.headers['set-cookie'] || [];
+
+    const adminSetCookie = adminLogin.headers['set-cookie'];
+    adminCookies = Array.isArray(adminSetCookie)
+      ? adminSetCookie
+      : adminSetCookie
+        ? [adminSetCookie]
+        : [];
 
     // Login como usuario normal (level bajo, ej: 1)
     const normalLogin = await request.post('/api/login').send({
       username: 'testuser2',
       password: 'Password123!',
     });
-    normalCookies = normalLogin.headers['set-cookie'] || [];
+
+    const normalSetCookie = normalLogin.headers['set-cookie'];
+    normalCookies = Array.isArray(normalSetCookie)
+      ? normalSetCookie
+      : normalSetCookie
+        ? [normalSetCookie]
+        : [];
   });
 
   afterEach(() => {

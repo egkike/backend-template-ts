@@ -1,9 +1,9 @@
 // Métodos de la tabla users
 import bcrypt from 'bcrypt';
 
-import pool from '../db/postgres.ts';
-import logger from '../utils/logger.ts';
-import { config } from '../config/index.ts';
+import pool from '../db/postgres.js';
+import logger from '../utils/logger.js';
+import { config } from '../config/index.js';
 
 const schema = config.db.schema;
 
@@ -66,7 +66,7 @@ export const userRepository = {
 
       return user;
     } catch (error) {
-      logger.error('Error en login', { error });
+      logger.error({ error }, 'Error en login');
       return { error: 'Error interno al autenticar' };
     }
   },
@@ -79,7 +79,7 @@ export const userRepository = {
       );
       return result.rows as User[];
     } catch (error) {
-      logger.error('Error al obtener usuarios', { error });
+      logger.error({ error }, 'Error al obtener usuarios');
       return { error: 'Error al obtener lista de usuarios' };
     }
   },
@@ -94,7 +94,7 @@ export const userRepository = {
       if (result.rows.length === 0) return { error: 'Usuario no encontrado' };
       return result.rows[0] as User;
     } catch (error) {
-      logger.error('Error al obtener usuario por ID', { id, error });
+      logger.error({ id, error }, 'Error al obtener usuario por ID');
       return { error: 'Error al buscar usuario' };
     }
   },
@@ -128,7 +128,7 @@ export const userRepository = {
 
       return result.rows[0] as User;
     } catch (error) {
-      logger.error('Error al crear usuario', { error });
+      logger.error({ error }, 'Error al crear usuario');
       return { error: 'Error al crear usuario' };
     }
   },
@@ -191,7 +191,7 @@ export const userRepository = {
 
       return result.rows[0] as User;
     } catch (error) {
-      logger.error('Error al actualizar usuario', { id, error });
+      logger.error({ id, error }, 'Error al actualizar usuario');
       return { error: 'Error interno al actualizar usuario' };
     }
   },
@@ -234,7 +234,7 @@ export const userRepository = {
 
       return result.rows[0] as User;
     } catch (error) {
-      logger.error('Error al cambiar contraseña', { id, error });
+      logger.error({ id, error }, 'Error al cambiar contraseña');
       return { error: 'Error interno al cambiar contraseña' };
     }
   },
@@ -254,7 +254,7 @@ export const userRepository = {
 
       return { success: 'Usuario eliminado correctamente' };
     } catch (error) {
-      logger.error('Error al eliminar usuario', { id, error });
+      logger.error({ id, error }, 'Error al eliminar usuario');
       return { error: 'Error interno al eliminar usuario' };
     }
   },
@@ -302,7 +302,7 @@ export const userRepository = {
 
       return null;
     } catch (error) {
-      logger.error('Error validando refresh token', { error });
+      logger.error({ error }, 'Error validando refresh token');
       return null;
     }
   },

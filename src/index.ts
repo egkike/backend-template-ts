@@ -4,14 +4,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 
-import swaggerSpecs from './swagger.ts';
-import { loginLimiter, refreshLimiter, apiLimiter } from './middlewares/rateLimit.ts';
-import { AppError } from './errors/AppError.ts';
-import { config } from './config/index.ts';
-import logger from './utils/logger.ts';
+import swaggerSpecs from './swagger.js';
+import { loginLimiter, refreshLimiter, apiLimiter } from './middlewares/rateLimit.js';
+import { AppError } from './errors/AppError.js';
+import { config } from './config/index.js';
+import logger from './utils/logger.js';
 // Importamos las rutas
-import authRoutes from './routes/auth.routes.ts';
-import userRoutes from './routes/user.routes.ts';
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 const app = express();
 
@@ -109,12 +109,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // Si es un error controlado (AppError)
   if (err instanceof AppError) {
-    logger.warn('Error controlado manejado', {
+    logger.warn({
       status: err.statusCode,
       message: err.message,
       path: req.path,
       method: req.method,
-    });
+    }, 'Error controlado manejado');
 
     return res.status(err.statusCode).json({
       success: false,
@@ -126,12 +126,12 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.status || 500;
   const message = err.message || 'Error interno del servidor';
 
-  logger.error('Error inesperado en el servidor', {
+  logger.error({
     error: err.message || err.toString(),
     stack: err.stack,
     path: req.path,
     method: req.method,
-  });
+  }, 'Error inesperado en el servidor');
 
   // Respuesta segura (más detalles solo en desarrollo)
   const response = {

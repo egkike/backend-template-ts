@@ -3,7 +3,7 @@
 import rateLimit from 'express-rate-limit';
 import { ipKeyGenerator } from 'express-rate-limit';
 
-import logger from '../utils/logger.ts';
+import logger from '../utils/logger.js';
 
 // Limite para login (anti-brute force)
 export const loginLimiter = rateLimit({
@@ -17,11 +17,11 @@ export const loginLimiter = rateLimit({
   standardHeaders: true, // devuelve headers RateLimit-*
   legacyHeaders: false,
   keyGenerator: req => {
-    return req.user?.id || ipKeyGenerator(req); // Prioridad: user ID > IP segura (IPv4/IPv6)
+    return (req as any).user.id || ipKeyGenerator(req as any); // Prioridad: user ID > IP segura (IPv4/IPv6)
   },
 
   handler: (req, res, next, options) => {
-    logger.warn('Límite de login alcanzado', { key: req.rateLimit.key, ip: req.ip });
+    logger.warn({ key: (req as any).rateLimit?.key, ip: req.ip }, 'Límite de login alcanzado');
     res.status(options.statusCode || 429).json(options.message);
   },
 });
@@ -38,11 +38,11 @@ export const refreshLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: req => {
-    return req.user?.id || ipKeyGenerator(req);
+    return (req as any).user.id || ipKeyGenerator(req as any);
   },
 
   handler: (req, res, next, options) => {
-    logger.warn('Límite de refresh alcanzado', { key: req.rateLimit.key, ip: req.ip });
+    logger.warn({ key: (req as any).rateLimit?.key, ip: req.ip }, 'Límite de login alcanzado');
     res.status(options.statusCode || 429).json(options.message);
   },
 });
