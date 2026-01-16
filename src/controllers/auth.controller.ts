@@ -20,26 +20,29 @@ export class AuthController {
 
     const userResult = await userRepository.login(input);
 
-    if ('error' in userResult) {
-      // Caso especial: debe cambiar contraseña
-      if (userResult.error === 'Debes cambiar la contraseña en tu primer login') {
-        // Devuelve 403 con indicador para frontend
-        return res.status(403).json({
-          success: false,
-          error: userResult.error,
-          mustChangePassword: true,
-          message:
-            'Tu cuenta requiere cambio de contraseña inicial. Usa /user/chgpass con el access_token actual.',
-        });
-      }
-
-      logger.warn({ input: { ...input, password: '***' } }, 'Intento de login fallido');
-      throw new AppError(userResult.error, 401);
+    // Caso especial: debe cambiar contraseña
+    if (
+      'error' in userResult &&
+      userResult.error === 'Debes cambiar la contraseña en tu primer login'
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: userResult.error,
+        mustChangePassword: true,
+        message:
+          'Tu cuenta requiere cambio de contraseña inicial. Usa /user/chgpass con el access_token actual.',
+      });
     }
 
+    // Error normal (credenciales inválidas, usuario no existe, etc.)
+    if ('error' in userResult || !userResult) {
+      logger.warn({ input: { ...input, password: '***' } }, 'Intento de login fallido');
+      throw new AppError('Credenciales inválidas', 401);
+    }
+
+    // Ahora sí: userResult es el usuario válido
     const user = userResult;
 
-    // Si llegó aquí, login OK y no necesita cambio obligatorio
     const payload = {
       id: user.id,
       username: user.username,
@@ -52,7 +55,6 @@ export class AuthController {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    // Guardamos el refresh token en DB
     await userRepository.saveRefreshToken({
       userId: user.id,
       token: refreshToken,

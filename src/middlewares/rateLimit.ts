@@ -14,12 +14,13 @@ export const loginLimiter = rateLimit({
     error:
       'Has alcanzado el límite de intentos de inicio de sesión. Espera un momento y vuelve a intentarlo.',
   },
-  standardHeaders: true, // devuelve headers RateLimit-*
+  standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: req => {
-    return (req as any).user.id || ipKeyGenerator(req as any); // Prioridad: user ID > IP segura (IPv4/IPv6)
+    // Evita crash si req.user es undefined
+    const user = (req as any).user;
+    return user?.id || ipKeyGenerator(req as any);
   },
-
   handler: (req, res, next, options) => {
     logger.warn({ key: (req as any).rateLimit?.key, ip: req.ip }, 'Límite de login alcanzado');
     res.status(options.statusCode || 429).json(options.message);
@@ -38,11 +39,12 @@ export const refreshLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: req => {
-    return (req as any).user.id || ipKeyGenerator(req as any);
+    // Evita crash si req.user es undefined
+    const user = (req as any).user;
+    return user?.id || ipKeyGenerator(req as any);
   },
-
   handler: (req, res, next, options) => {
-    logger.warn({ key: (req as any).rateLimit?.key, ip: req.ip }, 'Límite de login alcanzado');
+    logger.warn({ key: (req as any).rateLimit?.key, ip: req.ip }, 'Límite de refresh alcanzado');
     res.status(options.statusCode || 429).json(options.message);
   },
 });
