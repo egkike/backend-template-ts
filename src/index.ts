@@ -153,6 +153,8 @@ if (config.nodeEnv !== 'production') {
 
   // Ruta Swagger solo en dev
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+} else {
+  logger.info('Swagger desactivado en producción (seguridad)');
 }
 
 // 404 - Ruta no encontrada (lanzamos AppError para que pase al handler global)
