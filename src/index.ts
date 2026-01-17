@@ -3,8 +3,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
-import swaggerSpecs from './swagger.js';
 import { loginLimiter, refreshLimiter, apiLimiter } from './middlewares/rateLimit.js';
 import { AppError } from './errors/AppError.js';
 import { config } from './config/index.js';
@@ -98,7 +98,62 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Swagger UI - Documentación interactiva
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+// Solo en desarrollo o staging (no en producción real)
+if (config.nodeEnv !== 'production') {
+  const swaggerOptions = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'Academia Virtual API',
+        version: '1.0.0',
+        description: 'API REST para gestión de cursos y usuarios',
+      },
+      servers: [
+        {
+          url: 'http://localhost:3000',
+          description: 'Servidor de desarrollo',
+        },
+      ],
+      components: {
+        schemas: {
+          ErrorResponse: {
+            type: 'object',
+            properties: {
+              success: {
+                type: 'boolean',
+                example: false,
+              },
+              error: {
+                type: 'string',
+                example: 'Credenciales inválidas',
+              },
+              // Agrega más campos si tu error tiene (ej: message, details)
+            },
+            required: ['success', 'error'],
+          },
+          // Agrega otros schemas si usas $ref en más lugares
+        },
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+    },
+    apis: [
+      './src/routes/*.ts', // Rutas con comentarios JSDoc
+      './src/controllers/*.ts', // Controladores con comentarios
+      // Agrega más si tienes otros archivos con @swagger
+    ],
+  };
+
+  const swaggerSpecs = swaggerJsdoc(swaggerOptions);
+
+  // Ruta Swagger solo en dev
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+}
 
 // 404 - Ruta no encontrada (lanzamos AppError para que pase al handler global)
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -109,12 +164,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // Si es un error controlado (AppError)
   if (err instanceof AppError) {
-    logger.warn({
-      status: err.statusCode,
-      message: err.message,
-      path: req.path,
-      method: req.method,
-    }, 'Error controlado manejado');
+    logger.warn(
+      {
+        status: err.statusCode,
+        message: err.message,
+        path: req.path,
+        method: req.method,
+      },
+      'Error controlado manejado'
+    );
 
     return res.status(err.statusCode).json({
       success: false,
@@ -126,12 +184,15 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.status || 500;
   const message = err.message || 'Error interno del servidor';
 
-  logger.error({
-    error: err.message || err.toString(),
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-  }, 'Error inesperado en el servidor');
+  logger.error(
+    {
+      error: err.message || err.toString(),
+      stack: err.stack,
+      path: req.path,
+      method: req.method,
+    },
+    'Error inesperado en el servidor'
+  );
 
   // Respuesta segura (más detalles solo en desarrollo)
   const response = {
