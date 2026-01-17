@@ -104,9 +104,9 @@ if (config.nodeEnv !== 'production') {
     definition: {
       openapi: '3.0.0',
       info: {
-        title: 'Academia Virtual API',
+        title: 'API Template',
         version: '1.0.0',
-        description: 'API REST para gestión de cursos y usuarios',
+        description: 'API REST Template para gestión de usuarios',
       },
       servers: [
         {
