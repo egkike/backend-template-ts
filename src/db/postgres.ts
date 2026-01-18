@@ -16,23 +16,50 @@ const pool = new Pool({
   database: config.db.database,
   max: 20, // máximo de conexiones simultáneas
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // 10 segundos por conexión individual
   // ssl: { rejectUnauthorized: false } // descomenta si usas SSL en producción
+});
+
+// Logs de eventos del pool
+pool.on('connect', () => {
+  logger.debug('Nueva conexión establecida en el pool de PostgreSQL');
+});
+
+pool.on('acquire', () => {
+  logger.debug('Conexión adquirida del pool');
 });
 
 pool.on('error', (err, client) => {
   logger.error({ error: err.message }, 'Error inesperado en el pool de PostgreSQL');
 });
 
-// Función para verificar conexión al iniciar (opcional pero útil)
+// Función con retry para conectar al iniciar la app
+async function connectWithRetry(maxRetries = 20, delayMs = 3000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const client = await pool.connect();
+      client.release();
+      logger.info('Conexión a PostgreSQL establecida correctamente');
+      return pool;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.warn(`Intento ${i + 1}/${maxRetries} fallido: ${errorMessage}`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  const errorMsg = 'No se pudo conectar a PostgreSQL después de 20 intentos';
+  logger.error(errorMsg);
+  throw new Error(errorMsg);
+}
+
+// Inicialización automática al cargar el módulo
 (async () => {
   try {
-    const client = await pool.connect();
-    logger.info('Conexión a PostgreSQL establecida correctamente');
-    client.release();
-  } catch (error) {
-    logger.error({ error }, 'No se pudo conectar a PostgreSQL al inicio');
-    process.exit(1); // Salimos si no hay conexión (en producción puedes manejarlo diferente)
+    await connectWithRetry();
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error(`Inicialización de DB fallida - saliendo: ${errorMessage}`);
+    process.exit(1);
   }
 })();
 

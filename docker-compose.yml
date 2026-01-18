@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  api:
+    image: backend-template-api
+    container_name: backend-template-api
+    ports:
+      - "3000:3000"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const http = require('http'); http.get('http://localhost:3000/health', (r) => { r.statusCode === 200 ? process.exit(0) : process.exit(1); }).on('error', () => process.exit(1));\""]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 120s  # Tiempo generoso para arranque lento
+
+  db:
+    image: postgres:18
+    container_name: docker-db-postgres-template
+    restart: always
+    env_file:
+      - .env
+    # ports:
+    #   - "5432:5432"  # Comentar en producción real (seguridad)
+    volumes:
+      - ./postgres-data:/var/lib/postgresql  # Persistencia de datos
+      - ./db/init:/docker-entrypoint-initdb.d  # Scripts automáticos (solo primera vez)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
