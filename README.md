@@ -5,7 +5,11 @@ Template moderno, seguro y testeado de backend en **TypeScript** con Express, JW
 Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/egkike/backend-template-ts/actions/workflows/tests.yml/badge.svg)](https://github.com/egkike/backend-template-ts/actions)
+[![Tests](https://github.com/egkike/backend-template-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/egkike/backend-template-ts/actions)
+[![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/egkike/backend-template-ts)
+[![Node](https://img.shields.io/badge/node-20+-blue)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-v8+-orange)](https://pnpm.io/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://www.docker.com/)
 
 ## Tecnologías principales
 
@@ -21,6 +25,24 @@ Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 - Helmet + CSP (seguridad HTTP)
 - Rate limiting por ruta y usuario (express-rate-limit)
 - Permisos por nivel (middleware restrictTo)
+
+## Arquitectura rápida
+
+```mermaid
+graph TD
+    A[Frontend / Cliente] -->|HTTPS / JWT| B[API Express + Node.js]
+    B -->|HTTP + retry| C[PostgreSQL 18]
+    B --> D[Rate Limit + Helmet + CORS]
+    B --> E[Swagger Docs (solo dev)]
+    B --> F[Logging Pino]
+    C --> G[Scripts init + Seed]
+```
+
+**Características clave**:
+- **Autenticación**: JWT access/refresh con cookies HttpOnly + rotación y revocación
+- **Validación**: Zod + schemas estrictos
+- **Tests**: Vitest + Supertest (cobertura en auth, rutas y permisos)
+- **Seguridad**: Helmet (CSP), hpp, xss-clean, rate-limit por ruta y usuario
 
 ## Requisitos
 
@@ -62,12 +84,15 @@ PORT=3000
 NODE_ENV=development  # o production
 
 # Base de datos PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=tu_password
+POSTGRES_DB=tu_base_de_datos
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=tu_password
 DB_NAME=tu_base_de_datos
-DB_SCHEMA=public
+DB_SCHEMA=template
 
 # JWT
 SECRET_JWT_KEY=tu_secreto_super_largo_y_seguro_aqui_128_caracteres_minimo
@@ -130,9 +155,13 @@ CREATE INDEX idx_refresh_tokens_revoked ON public.refresh_tokens(revoked);
 CREATE INDEX idx_refresh_tokens_cleanup ON public.refresh_tokens (expires_at) WHERE revoked = FALSE;
 ```
 
-Notas:
-- Usa el schema public por defecto (o cambia a otro que prefieras).
+**Notas**:
+- Usa el schema `template` por defecto (o cambia a otro que prefieras).
 - En producción, considera migraciones automáticas (ej: Drizzle, Prisma Migrate).
+
+**Recomendación**: Usa pgAdmin o DBeaver para ejecutar estos scripts y ver las tablas.
+- pgAdmin integrado: http://localhost:5050 (user: admin@local.com, pass: admin)
+- Conexión automática a `db` (host: db, puerto: 5432, user: postgres)
 
 ## Comandos principales
 
@@ -145,10 +174,33 @@ pnpm test:watch   # Tests en modo watch
 pnpm test:coverage # Tests + reporte de cobertura
 ```
 
+## Desarrollo con Docker (recomendado)
+
+```bash
+# Construir imagen (usa --network host si tienes problemas de DNS)
+docker build -t backend-template-api -f Dockerfile --network host --no-cache .
+
+# Levantar todo (API + DB + pgAdmin opcional)
+docker-compose up -d
+```
+
+**Acceso**:
+- API: http://localhost:3000
+- Health: http://localhost:3000/health
+- Swagger (solo dev): http://localhost:3000/api-docs
+- pgAdmin: http://localhost:5050 (admin@local.com / admin)
+- PostgreSQL: localhost:5432 (user: postgres, pass: del .env)
+
+**Inicialización automática de la DB**:
+- La primera vez que se levanta el contenedor db (cuando `./postgres-data` está vacío o no existe), Postgres ejecuta automáticamente todos los archivos `.sql` en la carpeta `./db/init` (en orden alfabético).
+- Esto crea el schema, tablas, índices y datos iniciales (seed) sin intervención manual.
+- En arranques posteriores (con datos ya existentes), los scripts se ignoran (comportamiento estándar de la imagen oficial de Postgres).
+
 ## Estructura de carpetas
 
 ```
 backend-template-ts/
+├── db
 ├── src
 │   ├── __tests__     # Tests con Vitest
 │   ├── config        # Configuración (db, env, etc.)
@@ -164,9 +216,13 @@ backend-template-ts/
 │   └── index.ts      # Entrada principal (app Express)
 ├── .env.example
 ├── .prettierrc
+├── docker-compose.yml
+├── Dockerfile
 ├── eslint.config.mjs
 ├── package.json
+├── pnpm-lock.yaml
 ├── README.md
+├── tsconfig.build.json
 ├── tsconfig.json
 └── vitest.config.ts
 ```
@@ -207,16 +263,17 @@ Cobertura actual:
 
 1. Forkea el repositorio
 2. Crea tu rama (`git checkout -b feature/nueva-funcionalidad`)
-3. Commitea tus cambios (`git commit -m 'feat: nueva funcionalidad'`)
+3. Commitea con conventional commits (`git commit -m 'feat: nueva funcionalidad'`)
 4. Push a tu rama (`git push origin feature/nueva-funcionalidad`)
 5. Abre un Pull Request
+
+¡Todas las contribuciones son bienvenidas! (mejoras de seguridad, tests, docs, etc.)
 
 ## Licencia
 
 MIT License - usa libremente, modifica y distribuye.
 
 ---
-
 ¡Gracias por usar este template!
-Creado por Kike Garcia (@egkike)
-¡Contribuye y hazlo tuyo! 
+Creado con ❤️ por Kike Garcia (@kike_eg)
+¡Contribuye, forkéalo y hazlo tuyo!

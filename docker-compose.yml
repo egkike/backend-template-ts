@@ -22,7 +22,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 30
-      start_period: 120s  # Tiempo generoso para arranque lento
+      start_period: 120s  # Tiempo generoso para arranque lento (recomendado)
 
   db:
     image: postgres:18
@@ -44,6 +44,27 @@ services:
     networks:
       - app-network
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"  # Accede en http://localhost:5050 (solo dev)
+    depends_on:
+      - db
+    networks:
+      - app-network
+    # Opcional: volumen para persistir config de pgAdmin
+    # volumes:
+    #   - pgadmin-data:/var/lib/pgadmin
+
 networks:
   app-network:
     driver: bridge
+
+# Opcional: volumen para pgAdmin (si quieres persistir tus servidores guardados)
+# volumes:
+#   pgadmin-data:
