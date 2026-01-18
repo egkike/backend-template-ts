@@ -30,10 +30,12 @@ Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 
 ```mermaid
 flowchart TD
-    A[Frontend] -->|JWT| B[API]
-    B -->|SQL| C[PostgreSQL]
-    B --> D[Seguridad]
-    B --> E[Swagger]
+    A[Frontend / Cliente] -->|HTTPS / JWT| B[API Express + Node.js]
+    B -->|HTTP + retry| C[PostgreSQL 18]
+    B --> D[Rate Limit + Helmet + CORS]
+    B --> E[Swagger Docs (solo dev)]
+    B --> F[Logging Pino]
+    C --> G[Scripts init + Seed]
 ```
 
 **Características clave**:
