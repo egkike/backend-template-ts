@@ -29,7 +29,7 @@ Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 ## Arquitectura rápida
 
 ```mermaid
-graph TD
+flowchart TD
     A[Frontend / Cliente] -->|HTTPS / JWT| B[API Express + Node.js]
     B -->|HTTP + retry| C[PostgreSQL 18]
     B --> D[Rate Limit + Helmet + CORS]
