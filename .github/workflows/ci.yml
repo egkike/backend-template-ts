@@ -14,14 +14,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: latest
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 22
-        cache: 'pnpm'  # Cachea pnpm para acelerar futuros runs
-
-    - name: Install pnpm
-      run: npm install -g pnpm@latest  # Instala pnpm globalmente
+        cache: 'pnpm'
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
