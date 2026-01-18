@@ -28,21 +28,15 @@ Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 
 ## Arquitectura rápida
 
-```mermaid
-flowchart TD
-    A[Frontend / Cliente] -->|HTTPS / JWT| B[API Express + Node.js]
-    B -->|HTTP + retry| C[PostgreSQL 18]
-    B --> D[Rate Limit + Helmet + CORS]
-    B --> E[Swagger Docs (solo dev)]
-    B --> F[Logging Pino]
-    C --> G[Scripts init + Seed]
-```
+El proyecto sigue una arquitectura clásica de API REST:
 
-**Características clave**:
-- **Autenticación**: JWT access/refresh con cookies HttpOnly + rotación y revocación
-- **Validación**: Zod + schemas estrictos
-- **Tests**: Vitest + Supertest (cobertura en auth, rutas y permisos)
-- **Seguridad**: Helmet (CSP), hpp, xss-clean, rate-limit por ruta y usuario
+- **Frontend / Cliente** se comunica con la **API Express + Node.js** mediante HTTPS y JWT.
+- La API maneja la lógica de negocio, autenticación, rate limiting, logging y seguridad.
+- La **API se conecta a PostgreSQL 18** para persistencia de datos (con retry automático para arranque lento).
+- Seguridad: Helmet (CSP), hpp, xss-clean, rate-limit por ruta.
+- Validación: Zod + schemas estrictos.
+- Tests: Vitest + Supertest.
+- Documentación: Swagger interactiva (solo en desarrollo).
 
 ## Requisitos
 
