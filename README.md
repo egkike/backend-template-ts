@@ -28,7 +28,6 @@ Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 
 ## Arquitectura rápida
 
-```mermaid
 graph TD
     A[Frontend / Cliente] -->|HTTPS / JWT| B[API Express + Node.js]
     B -->|HTTP + retry| C[PostgreSQL 18]
@@ -36,7 +35,6 @@ graph TD
     B --> E[Swagger Docs (solo dev)]
     B --> F[Logging Pino]
     C --> G[Scripts init + Seed]
-```
 
 **Características clave**:
 - **Autenticación**: JWT access/refresh con cookies HttpOnly + rotación y revocación
