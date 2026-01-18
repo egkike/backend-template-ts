@@ -18,7 +18,10 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 22
-        cache: 'pnpm'
+        cache: 'pnpm'  # Cachea pnpm para acelerar futuros runs
+
+    - name: Install pnpm
+      run: npm install -g pnpm@latest  # Instala pnpm globalmente
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
