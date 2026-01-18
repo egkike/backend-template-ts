@@ -190,6 +190,12 @@ docker-compose up -d
 - Esto crea el schema, tablas, índices y datos iniciales (seed) sin intervención manual.
 - En arranques posteriores (con datos ya existentes), los scripts se ignoran (comportamiento estándar de la imagen oficial de Postgres).
 
+```bash
+# Detener todo y eliminar los contenedores y la red (No borra el volúmen de datos en ./postgres-data):
+
+docker-compose down
+```
+
 ## Estructura de carpetas
 
 ```
