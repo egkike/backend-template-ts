@@ -35,7 +35,8 @@ flowchart TD
     B --> D[Rate Limit + Helmet + CORS]
     B --> E[Swagger Docs (solo dev)]
     B --> F[Logging Pino]
-    C --> G[Scripts init + Seed]```
+    C --> G[Scripts init + Seed]
+```
 
 **Características clave**:
 - **Autenticación**: JWT access/refresh con cookies HttpOnly + rotación y revocación
