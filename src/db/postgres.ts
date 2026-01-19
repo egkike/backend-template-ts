@@ -14,6 +14,7 @@ const pool = new Pool({
   user: config.db.user,
   password: config.db.password,
   database: config.db.database,
+  options: `-c search_path=${config.db.schema || 'template'},public`,
   max: 20, // máximo de conexiones simultáneas
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000, // 10 segundos por conexión individual

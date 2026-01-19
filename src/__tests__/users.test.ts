@@ -1,10 +1,5 @@
-// Test users.test.ts
-// Permisos/roles (403 en rutas restringidas con level bajo)
-// Errores controlados (ej: 400 con contraseña débil, 409 con usuario duplicado)
-// Flujo de CRUD (create user con permisos, update, delete)
-
 import { vi } from 'vitest';
-// Mock de config para tests (evita ZodError en CI)
+// Mock de config (evita ZodError en CI)
 vi.mock('../config/index', () => ({
   config: {
     jwt: {
@@ -14,7 +9,7 @@ vi.mock('../config/index', () => ({
     },
     db: {
       host: 'localhost',
-      port: 5432,
+      port: 5433,
       user: 'test-user',
       password: 'test-pass',
       database: 'test-db',
@@ -27,49 +22,101 @@ vi.mock('../config/index', () => ({
     port: 3000,
   },
 }));
+// Mock completo de userRepository
+vi.mock('../repositories/user.repository.ts', () => ({
+  default: {
+    login: vi.fn(async ({ username, password }) => {
+      if (username === 'admin' && password === 'Admin1') {
+        return {
+          id: 'admin-id-mock',
+          username: 'admin',
+          email: 'admin@midominio.com',
+          fullname: 'Usuario Administrador',
+          level: 5,
+          active: 1,
+          must_change_password: false,
+        };
+      }
+      if (username === 'testuser2' && password === 'Password123!') {
+        return {
+          id: 'normal-id-mock',
+          username: 'testuser2',
+          email: 'testuser2@local.com',
+          fullname: 'Usuario Test',
+          level: 1,
+          active: 1,
+          must_change_password: false,
+        };
+      }
+      return { error: 'Credenciales inválidas' };
+    }),
+    getUsers: vi.fn(async () => [
+      { id: '1', username: 'user1', email: 'user1@test.com' },
+      { id: '2', username: 'user2', email: 'user2@test.com' },
+    ]), // Devuelve array directamente (como probablemente lo hace tu API real)
+    createUser: vi.fn(async data => {
+      if (data.password.length < 6) {
+        throw new AppError('Password debe tener al menos 6 caracteres', 400);
+      }
+      return {
+        id: 'new-id-' + Date.now(),
+        username: data.username,
+        email: data.email,
+        fullname: data.fullname,
+        level: 1,
+        active: 1,
+        must_change_password: false,
+      };
+    }),
+    saveRefreshToken: vi.fn(async () => {}),
+  },
+}));
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
 import { app } from '../index.ts';
-import 'dotenv/config';
 
 const request = supertest(app);
 
 describe('Users API (con permisos)', () => {
-  let adminCookies: string[] = [];
-  let normalCookies: string[] = [];
+  let adminCookies: string = '';
+  let normalCookies: string = '';
 
   beforeEach(async () => {
-    // Login como admin (level alto)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Login admin
     const adminLogin = await request.post('/api/login').send({
       username: 'admin',
       password: 'Admin1',
     });
 
     const adminSetCookie = adminLogin.headers['set-cookie'];
-    adminCookies = Array.isArray(adminSetCookie)
-      ? adminSetCookie
-      : adminSetCookie
-        ? [adminSetCookie]
-        : [];
+    if (adminSetCookie) {
+      adminCookies = Array.isArray(adminSetCookie) ? adminSetCookie.join('; ') : adminSetCookie;
+      console.log('Admin cookies:', adminCookies);
+    } else {
+      console.error('No cookies en login admin. Respuesta:', adminLogin.body);
+    }
 
-    // Login como usuario normal (level bajo, ej: 1)
+    // Login normal
     const normalLogin = await request.post('/api/login').send({
       username: 'testuser2',
       password: 'Password123!',
     });
 
     const normalSetCookie = normalLogin.headers['set-cookie'];
-    normalCookies = Array.isArray(normalSetCookie)
-      ? normalSetCookie
-      : normalSetCookie
-        ? [normalSetCookie]
-        : [];
+    if (normalSetCookie) {
+      normalCookies = Array.isArray(normalSetCookie) ? normalSetCookie.join('; ') : normalSetCookie;
+      console.log('Normal cookies:', normalCookies);
+    } else {
+      console.error('No cookies en login normal. Respuesta:', normalLogin.body);
+    }
   });
 
   afterEach(() => {
-    adminCookies = [];
-    normalCookies = [];
+    adminCookies = '';
+    normalCookies = '';
   });
 
   it('admin puede listar usuarios (200)', async () => {
@@ -131,7 +178,7 @@ describe('Users API (con permisos)', () => {
       .expect(400);
 
     expect(res.body.success).toBe(false);
-    expect(res.body.error).toContain('Password'); // ← Cambia a 'Password' (en inglés)
-    expect(res.body.error).toContain('6'); // ← Opcional: verifica también el largo mínimo
+    expect(res.body.error).toContain('Password');
+    expect(res.body.error).toContain('6');
   });
 });

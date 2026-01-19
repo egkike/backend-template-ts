@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  db-test:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: test-user
+      POSTGRES_PASSWORD: test-pass
+      POSTGRES_DB: test-db
+    ports:
+      - "5433:5432"  # Puerto diferente para no chocar con tu DB local
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d  # ← scripts de inicialización
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test-user -d test-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
