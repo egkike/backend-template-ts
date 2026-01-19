@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
-import { UserController } from '../controllers/user.controller.js';
-import { jwtAuthMiddleware } from '../middlewares/auth/jwt.middleware.js';
-import { restrictTo } from '../middlewares/auth/role.middleware.js';
-import { generateAccessToken, generateRefreshToken, verifyToken } from '../utils/jwt.js';
-import userRepository from '../repositories/user.repository.js';
+import { UserController } from '../controllers/user.controller.ts';
+import { jwtAuthMiddleware } from '../middlewares/auth/jwt.middleware.ts';
+import { restrictTo } from '../middlewares/auth/role.middleware.ts';
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt.ts';
+import userRepository from '../repositories/user.repository.ts';
 
 const router = Router();
 

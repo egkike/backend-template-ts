@@ -1,8 +1,8 @@
 // Conexión al pool de PostgreSQL, tipada y con parseo correcto de tipos numéricos.
 import { Pool, types } from 'pg';
 
-import { config } from '../config/index.js';
-import logger from '../utils/logger.js';
+import { config } from '../config/index.ts';
+import logger from '../utils/logger.ts';
 
 // Configuramos el parseo de tipos numéricos de PostgreSQL como números JS
 types.setTypeParser(types.builtins.NUMERIC, (value: string) => parseFloat(value));

@@ -4,8 +4,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 
-import { AppError } from '../../errors/AppError.js';
-import logger from '../../utils/logger.js';
+import { AppError } from '../../errors/AppError.ts';
+import logger from '../../utils/logger.ts';
 
 /**
  * Middleware para validar nivel de usuario (roles/permisos)

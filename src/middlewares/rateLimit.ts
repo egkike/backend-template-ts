@@ -3,7 +3,7 @@
 import rateLimit from 'express-rate-limit';
 import { ipKeyGenerator } from 'express-rate-limit';
 
-import logger from '../utils/logger.js';
+import logger from '../utils/logger.ts';
 
 // Limite para login (anti-brute force)
 export const loginLimiter = rateLimit({

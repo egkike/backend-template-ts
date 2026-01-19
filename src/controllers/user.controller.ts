@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 
-import { validatePartialUser, validatePasswordDetailed } from '../schemas/users.js';
-//import logger from '../utils/logger.js';
-import userRepository from '../repositories/user.repository.js';
-import type { User } from '../repositories/user.repository.js';
-import { AppError } from '../errors/AppError.js';
+import { validatePartialUser, validatePasswordDetailed } from '../schemas/users.ts';
+import userRepository from '../repositories/user.repository.ts';
+import type { User } from '../repositories/user.repository.ts';
+import { AppError } from '../errors/AppError.ts';
 
 export class UserController {
   getSession(req: Request, res: Response) {

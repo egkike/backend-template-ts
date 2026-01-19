@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
-import { app } from '../index.js'; // Solo app, sin listen
+import { app } from '../index.ts'; // Solo app, sin listen
 
 const request = supertest(app);
 
