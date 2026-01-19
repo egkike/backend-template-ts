@@ -1,6 +1,4 @@
 import { vi } from 'vitest';
-
-// Mock de config (evita ZodError en CI) - DEBE ser lo PRIMERO
 vi.mock('../config/index', () => ({
   config: {
     jwt: {
@@ -23,11 +21,6 @@ vi.mock('../config/index', () => ({
     port: 3000,
   },
 }));
-
-// Variable de estado global para simular revocación
-let isTokenRevoked = false;
-
-// Mock completo de userRepository
 vi.mock('../repositories/user.repository.ts', () => ({
   default: {
     login: vi.fn(async ({ username, password }) => {
@@ -44,23 +37,18 @@ vi.mock('../repositories/user.repository.ts', () => ({
       }
       return { error: 'Credenciales inválidas' };
     }),
-
     saveRefreshToken: vi.fn(async () => ({ success: true })),
-
     validateRefreshToken: vi.fn(async _ => {
       if (isTokenRevoked) {
         return null; // ¡Fix clave! Devuelve null para simular token inválido y forzar 401 en tu app code
       }
       return { userId: 'admin-id-mock', valid: true };
     }),
-
     revokeRefreshToken: vi.fn(async _ => {
       isTokenRevoked = true;
       return true;
     }),
-
     deleteRefreshToken: vi.fn(async () => true),
-
     getById: vi.fn(async _ => ({
       id: 'admin-id-mock',
       username: 'admin',
@@ -69,11 +57,13 @@ vi.mock('../repositories/user.repository.ts', () => ({
     })),
   },
 }));
-
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
 import { app } from '../index.ts';
+
+// Variable de estado global para simular revocación
+let isTokenRevoked = false;
 
 const request = supertest(app);
 

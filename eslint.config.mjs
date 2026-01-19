@@ -35,5 +35,15 @@ export default tseslint.config(
     },
   },
 
-  { ignores: ['dist/**', 'node_modules/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      'postgres-data/**',       // ← ignora TODA la carpeta de datos Postgres/Docker
+      'docker/**',              // si tenés alguna carpeta docker extra
+      'docker-compose*.yml',    // archivos compose
+      '*.log',                  // logs varios
+    ],
+  }
 );

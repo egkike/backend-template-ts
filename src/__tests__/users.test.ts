@@ -75,6 +75,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
 import { app } from '../index.ts';
+import { AppError } from '../errors/AppError.ts'; 
 
 const request = supertest(app);
 
@@ -94,9 +95,8 @@ describe('Users API (con permisos)', () => {
     const adminSetCookie = adminLogin.headers['set-cookie'];
     if (adminSetCookie) {
       adminCookies = Array.isArray(adminSetCookie) ? adminSetCookie.join('; ') : adminSetCookie;
-      console.log('Admin cookies:', adminCookies);
     } else {
-      console.error('No cookies en login admin. Respuesta:', adminLogin.body);
+      console.warn('No cookies en login admin. Respuesta:', adminLogin.body);
     }
 
     // Login normal
@@ -108,9 +108,8 @@ describe('Users API (con permisos)', () => {
     const normalSetCookie = normalLogin.headers['set-cookie'];
     if (normalSetCookie) {
       normalCookies = Array.isArray(normalSetCookie) ? normalSetCookie.join('; ') : normalSetCookie;
-      console.log('Normal cookies:', normalCookies);
     } else {
-      console.error('No cookies en login normal. Respuesta:', normalLogin.body);
+      console.warn('No cookies en login normal. Respuesta:', normalLogin.body);
     }
   });
 
