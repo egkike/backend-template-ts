@@ -3,6 +3,30 @@
 // Errores controlados (ej: 400 con contraseña débil, 409 con usuario duplicado)
 // Flujo de CRUD (create user con permisos, update, delete)
 
+import { vi } from 'vitest';
+// Mock de config para tests (evita ZodError en CI)
+vi.mock('../config/index', () => ({
+  config: {
+    jwt: {
+      secret: 'test-secret-super-largo-para-tests',
+      accessTokenExpiry: '15m',
+      refreshTokenExpiry: '7d',
+    },
+    db: {
+      host: 'localhost',
+      port: 5432,
+      user: 'test-user',
+      password: 'test-pass',
+      database: 'test-db',
+      schema: 'public',
+    },
+    cors: {
+      origins: ['http://localhost:5173'],
+    },
+    nodeEnv: 'test',
+    port: 3000,
+  },
+}));
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
