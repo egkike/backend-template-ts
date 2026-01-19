@@ -112,7 +112,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 2. Tabla users
 
 ```sql
-CREATE TABLE IF NOT EXISTS public.users (
+CREATE TABLE IF NOT EXISTS template.users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
@@ -124,14 +124,14 @@ CREATE TABLE IF NOT EXISTS public.users (
   createdate TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_username ON public.users(username);
-CREATE INDEX idx_users_email ON public.users(email);
+CREATE INDEX idx_users_username ON template.users(username);
+CREATE INDEX idx_users_email ON template.users(email);
 ```
 
 3. Tabla refresh_tokens
 
 ```sql
-CREATE TABLE IF NOT EXISTS public.refresh_tokens (
+CREATE TABLE IF NOT EXISTS template.refresh_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES cursos.users(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL,
@@ -141,12 +141,12 @@ CREATE TABLE IF NOT EXISTS public.refresh_tokens (
   revoked_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE INDEX idx_refresh_tokens_user_id ON public.refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_expires_at ON public.refresh_tokens(expires_at);
-CREATE INDEX idx_refresh_tokens_revoked ON public.refresh_tokens(revoked);
+CREATE INDEX idx_refresh_tokens_user_id ON template.refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_expires_at ON template.refresh_tokens(expires_at);
+CREATE INDEX idx_refresh_tokens_revoked ON template.refresh_tokens(revoked);
 
 -- Opcional: índice para limpieza periódica de expirados
-CREATE INDEX idx_refresh_tokens_cleanup ON public.refresh_tokens (expires_at) WHERE revoked = FALSE;
+CREATE INDEX idx_refresh_tokens_cleanup ON template.refresh_tokens (expires_at) WHERE revoked = FALSE;
 ```
 
 **Notas**:
