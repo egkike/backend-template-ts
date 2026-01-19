@@ -163,7 +163,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Error handler global profesional
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response, _: NextFunction) => {
   // Si es un error controlado (AppError)
   if (err instanceof AppError) {
     logger.warn(

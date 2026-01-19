@@ -77,7 +77,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    const { password: _, ...publicUser } = user;
+    const { ...publicUser } = user;
     return res.status(200).json({ success: true, user: publicUser });
   }
 

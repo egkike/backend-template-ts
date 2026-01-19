@@ -29,7 +29,7 @@ pool.on('acquire', () => {
   logger.debug('Conexión adquirida del pool');
 });
 
-pool.on('error', (err, client) => {
+pool.on('error', (err, _) => {
   logger.error({ error: err.message }, 'Error inesperado en el pool de PostgreSQL');
 });
 
