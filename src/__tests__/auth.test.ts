@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
 import { app } from '../index.ts'; // Solo app, sin listen
+import 'dotenv/config';
 
 const request = supertest(app);
 

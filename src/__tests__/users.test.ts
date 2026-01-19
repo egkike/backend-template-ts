@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
 import { app } from '../index.ts';
+import 'dotenv/config';
 
 const request = supertest(app);
 
