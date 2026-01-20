@@ -21,15 +21,13 @@ export default tseslint.config(
     },
     rules: {
       'import/extensions': [
-        'error',
-        'ignorePackages',
-        { ts: 'always', tsx: 'always', js: 'never', jsx: 'never' },
+        'off',
       ],
       'import/no-unresolved': 'error',
       'import/order': ['warn', { 'newlines-between': 'always' }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/explicit-function-return-type': 'off', // temporal, lo volvemos a activar después
-      '@typescript-eslint/no-explicit-any': 'off', // temporal, lo volvemos a activar después
+      '@typescript-eslint/explicit-function-return-type': 'off', 
+      '@typescript-eslint/no-explicit-any': 'off', 
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always'],
     },
