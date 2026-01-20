@@ -5,13 +5,13 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
-import { loginLimiter, refreshLimiter, apiLimiter } from './middlewares/rateLimit.ts';
-import { AppError } from './errors/AppError.ts';
-import { config } from './config/index.ts';
-import logger from './utils/logger.ts';
+import { loginLimiter, refreshLimiter, apiLimiter } from './middlewares/rateLimit';
+import { AppError } from './errors/AppError';
+import { config } from './config/index';
+import logger from './utils/logger';
 // Importamos las rutas
-import authRoutes from './routes/auth.routes.ts';
-import userRoutes from './routes/user.routes.ts';
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 
 const app = express();
 

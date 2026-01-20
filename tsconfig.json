@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2023", "DOM"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",              // ← Cambia a ESNext (o NodeNext si preferís estrictamente Node)
+    "moduleResolution": "Bundler",   // ← Ahora sí: Bundler permite imports sin extensión
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,14 +15,12 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "exactOptionalPropertyTypes": true,
-    "noEmit": true, // ← Esto es lo clave (no genera .js, solo valida tipos)
-    "allowImportingTsExtensions": true,
-    "noEmitOnError": false, // opcional, para no detener en errores menores
+    "noEmit": true,
     "typeRoots": [
       "./node_modules/@types",
-      "./src/types" // ← Esto es clave para forzar la carga de express.d.ts
+      "./src/types"
     ],
-    "types": ["express"] // Fuerza carga de express + tus extensiones
+    "types": ["express"]
   },
   "include": ["src/**/*.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

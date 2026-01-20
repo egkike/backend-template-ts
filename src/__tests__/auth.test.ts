@@ -60,7 +60,7 @@ vi.mock('../repositories/user.repository.ts', () => ({
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
-import { app } from '../index.ts';
+import { app } from '../index';
 
 // Variable de estado global para simular revocación
 let isTokenRevoked = false;

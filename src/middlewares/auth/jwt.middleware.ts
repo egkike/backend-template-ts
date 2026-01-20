@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { verifyToken } from '../../utils/jwt.ts';
-import logger from '../../utils/logger.ts';
+import { verifyToken } from '../../utils/jwt';
+import logger from '../../utils/logger';
 
 /**
  * Middleware de autenticación JWT

@@ -2,8 +2,8 @@ version: '3.9'
 
 services:
   api:
-    image: backend-template-api
-    container_name: backend-template-api
+    image: node-ts-api  # Imagen genérica (cámbiala por el nombre de tu proyecto en Dockerfile si lo tenés)
+    container_name: api
     ports:
       - "3000:3000"
     dns:
@@ -26,15 +26,15 @@ services:
 
   db:
     image: postgres:18
-    container_name: docker-db-postgres-template
+    container_name: postgres-db
     restart: always
     env_file:
       - .env
     # ports:
     #   - "5432:5432"  # Comentar en producción real (seguridad)
     volumes:
-      - ./postgres-data:/var/lib/postgresql  # Persistencia de datos
-      - ./db/init:/docker-entrypoint-initdb.d  # Scripts automáticos (solo primera vez)
+      - ./postgres-data:/var/lib/postgresql       # Persistencia de datos
+      - ./db/init:/docker-entrypoint-initdb.d     # Scripts automáticos (solo primera vez)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s

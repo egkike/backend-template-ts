@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt.ts';
-import { validatePartialUser } from '../schemas/users.ts';
-import logger from '../utils/logger.ts';
-import { config } from '../config/index.ts';
-import userRepository from '../repositories/user.repository.ts';
-import { AppError } from '../errors/AppError.ts';
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
+import { validatePartialUser } from '../schemas/users';
+import logger from '../utils/logger';
+import { config } from '../config/index';
+import userRepository from '../repositories/user.repository';
+import { AppError } from '../errors/AppError';
 
 export class AuthController {
   async login(req: Request, res: Response) {

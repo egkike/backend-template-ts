@@ -74,8 +74,8 @@ vi.mock('../repositories/user.repository.ts', () => ({
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
-import { app } from '../index.ts';
-import { AppError } from '../errors/AppError.ts'; 
+import { app } from '../index';
+import { AppError } from '../errors/AppError'; 
 
 const request = supertest(app);
 

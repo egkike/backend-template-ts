@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 
-import { config } from '../config/index.ts';
+import { config } from '../config/index';
 
-import logger from './logger.ts';
+import logger from './logger';
 
 export interface UserTokenPayload {
   id: string;

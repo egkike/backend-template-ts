@@ -1,9 +1,9 @@
 // Métodos de la tabla users
 import bcrypt from 'bcrypt';
 
-import pool from '../db/postgres.ts';
-import logger from '../utils/logger.ts';
-import { config } from '../config/index.ts';
+import pool from '../db/postgres';
+import logger from '../utils/logger';
+import { config } from '../config/index';
 
 const schema = config.db.schema;
 

@@ -1,11 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": false,                // ← Esto es clave: ahora SÍ genera archivos
-    "outDir": "./dist",             // carpeta de salida
-    "declaration": false,           // opcional, no genera .d.ts
-    "sourceMap": false,             // opcional, para producción
-    "allowImportingTsExtensions": false  // quita extensiones .ts en build
+    "noEmit": false,
+    "outDir": "./dist",
+    "declaration": false,
+    "sourceMap": false,
+    "module": "ESNext",
+    "moduleResolution": "bundler"  // ← Cambio clave
   },
   "include": ["src/**/*.ts"],
   "exclude": ["**/*.test.ts", "**/*.spec.ts", "node_modules"]

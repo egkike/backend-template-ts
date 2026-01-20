@@ -78,18 +78,18 @@ PORT=3000
 NODE_ENV=development  # o production
 
 # Base de datos PostgreSQL
-POSTGRES_USER=postgres
+POSTGRES_USER=app_user
 POSTGRES_PASSWORD=tu_password
-POSTGRES_DB=tu_base_de_datos
+POSTGRES_DB=app_db
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=postgres
+DB_USER=app_user
 DB_PASSWORD=tu_password
-DB_NAME=tu_base_de_datos
-DB_SCHEMA=template
+DB_NAME=app_db
+DB_SCHEMA=public
 
 # JWT
-SECRET_JWT_KEY=tu_secreto_super_largo_y_seguro_aqui_128_caracteres_minimo
+SECRET_JWT_KEY=your-very-long-and-secure-secret-here-min-128-chars
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
@@ -112,7 +112,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 2. Tabla users
 
 ```sql
-CREATE TABLE IF NOT EXISTS template.users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
@@ -124,16 +124,16 @@ CREATE TABLE IF NOT EXISTS template.users (
   createdate TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_username ON template.users(username);
-CREATE INDEX idx_users_email ON template.users(email);
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
 ```
 
 3. Tabla refresh_tokens
 
 ```sql
-CREATE TABLE IF NOT EXISTS template.refresh_tokens (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES cursos.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -141,16 +141,16 @@ CREATE TABLE IF NOT EXISTS template.refresh_tokens (
   revoked_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE INDEX idx_refresh_tokens_user_id ON template.refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_expires_at ON template.refresh_tokens(expires_at);
-CREATE INDEX idx_refresh_tokens_revoked ON template.refresh_tokens(revoked);
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX idx_refresh_tokens_revoked ON refresh_tokens(revoked);
 
 -- Opcional: índice para limpieza periódica de expirados
-CREATE INDEX idx_refresh_tokens_cleanup ON template.refresh_tokens (expires_at) WHERE revoked = FALSE;
+CREATE INDEX idx_refresh_tokens_cleanup ON refresh_tokens (expires_at) WHERE revoked = FALSE;
 ```
 
 **Notas**:
-- Usa el schema `template` por defecto (o cambia a otro que prefieras).
+- Usa el schema `public` por defecto (o cambia a otro que prefieras).
 - En producción, considera migraciones automáticas (ej: Drizzle, Prisma Migrate).
 
 **Recomendación**: Usa pgAdmin o DBeaver para ejecutar estos scripts y ver las tablas.
@@ -172,7 +172,7 @@ pnpm test:coverage # Tests + reporte de cobertura
 
 ```bash
 # Construir imagen (usa --network host si tienes problemas de DNS)
-docker build -t backend-template-api -f Dockerfile --network host --no-cache .
+docker build -t node-ts-api -f Dockerfile --network host --no-cache .
 
 # Levantar todo (API + DB + pgAdmin opcional)
 docker-compose up -d
