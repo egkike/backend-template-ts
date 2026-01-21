@@ -100,62 +100,12 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 TRUST_PROXY=true  # si usas reverse proxy (nginx, etc.)
 ```
 
-## Base de datos - Scripts de creación (PostgreSQL)
-Ejecuta estos scripts en orden en tu instancia de PostgreSQL (pgAdmin, DBeaver, psql, etc.) para crear las tablas necesarias.
+## Base de datos (PostgreSQL)
+- Las tablas se crean a partir de los scripts de `./db/init/*.sql`, cuando corre `docker-compose.yml`.
 
-1. Habilita extensión UUID (si no está):
-
-```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-```
-
-2. Tabla users
-
-```sql
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  fullname VARCHAR(100) NOT NULL,
-  password TEXT NOT NULL,
-  level INTEGER DEFAULT 1 NOT NULL,
-  active INTEGER DEFAULT 0 NOT NULL,
-  must_change_password BOOLEAN DEFAULT TRUE NOT NULL,
-  createdate TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_email ON users(email);
-```
-
-3. Tabla refresh_tokens
-
-```sql
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash TEXT NOT NULL,
-  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  revoked BOOLEAN DEFAULT FALSE,
-  revoked_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-CREATE INDEX idx_refresh_tokens_revoked ON refresh_tokens(revoked);
-
--- Opcional: índice para limpieza periódica de expirados
-CREATE INDEX idx_refresh_tokens_cleanup ON refresh_tokens (expires_at) WHERE revoked = FALSE;
-```
-
-**Notas**:
-- Usa el schema `public` por defecto (o cambia a otro que prefieras).
-- En producción, considera migraciones automáticas (ej: Drizzle, Prisma Migrate).
-
-**Recomendación**: Usa pgAdmin o DBeaver para ejecutar estos scripts y ver las tablas.
+**Recomendación**: Usa pgAdmin o DBeaver para ver las tablas.
 - pgAdmin integrado: http://localhost:5050 (user: admin@local.com, pass: admin)
-- Conexión automática a `db` (host: db, puerto: 5432, user: postgres)
+- Conexión automática a `db` (host: db, puerto: 5432, user: app_user)
 
 ## Comandos principales
 
