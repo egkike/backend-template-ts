@@ -5,6 +5,20 @@ import importPlugin from 'eslint-plugin-import';
 import typescriptParser from '@typescript-eslint/parser';
 
 export default tseslint.config(
+  // 1. IGNORES GLOBALES (Debe ir primero y sin otras propiedades)
+  {
+    ignores: [
+      'vitest.config.ts', // <-- Añadido específicamente aquí
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      'postgres-data/**',
+      'docker/**',
+      'docker-compose*.yml',
+      '*.log',
+    ],
+  },
+
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,
@@ -17,7 +31,7 @@ export default tseslint.config(
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
-        project: './tsconfig.json', // Añadido aquí para mejor integración
+        project: './tsconfig.json',
       },
     },
     settings: {
@@ -26,7 +40,7 @@ export default tseslint.config(
       },
       'import/resolver': {
         typescript: {
-          alwaysTryTypes: true, // Debe ir AQUÍ adentro
+          alwaysTryTypes: true,
           project: './tsconfig.json',
         },
       },
@@ -38,20 +52,8 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }], // Agregué info para tus logs
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       eqeqeq: ['error', 'always'],
     },
-  },
-
-  {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'coverage/**',
-      'postgres-data/**',
-      'docker/**',
-      'docker-compose*.yml',
-      '*.log',
-    ],
   }
 );
