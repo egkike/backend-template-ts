@@ -1,0 +1,5 @@
+{
+  "ignorePatterns": [
+    "vitest.config.ts"
+  ]
+}
