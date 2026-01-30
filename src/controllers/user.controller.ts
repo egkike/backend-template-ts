@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 
 import { validatePartialUser, validatePasswordDetailed } from '../schemas/users';
-import userRepository from '../repositories/user.repository';
-import type { User } from '../repositories/user.repository';
+import { userRepository } from '../repositories/user.repository';
+// Importamos UserWithPassword para el cast de seguridad
+import type { UserWithPassword } from '../repositories/user.repository';
 import { AppError } from '../errors/AppError';
 
 export class UserController {
@@ -14,27 +15,16 @@ export class UserController {
   }
 
   async getUsers(_req: Request, res: Response) {
-    const result = await userRepository.getUsers();
-
-    if ('error' in result) {
-      throw new AppError(result.error, 404);
-    }
-
-    return res.status(200).json({ success: true, users: result });
+    const users = await userRepository.getUsers();
+    return res.status(200).json({ success: true, users });
   }
 
   async getById(req: Request, res: Response) {
     const { id } = req.body;
-
-    if (!id) {
-      throw new AppError('ID requerido', 400);
-    }
+    if (!id) throw new AppError('ID requerido', 400);
 
     const user = await userRepository.getById(id);
-
-    if ('error' in user) {
-      throw new AppError(user.error, 404);
-    }
+    if (!user) throw new AppError('Usuario no encontrado', 404);
 
     return res.status(200).json({ success: true, user });
   }
@@ -46,37 +36,36 @@ export class UserController {
       throw new AppError(errorMsg || 'Datos inválidos', 400);
     }
 
-    const password = validation.data.password;
-    if (!password) {
-      throw new AppError('La contraseña es requerida', 400);
-    }
+    const { username, password, email, fullname } = validation.data;
+
+    if (!password) throw new AppError('La contraseña es requerida', 400);
+
     const pwdCheck = validatePasswordDetailed(password);
     if (!pwdCheck.valid) {
       throw new AppError(pwdCheck.errors?.join('; ') || 'Contraseña inválida', 400);
     }
 
     const newUser = await userRepository.createUser({
-      username: validation.data.username!, // ! = non-null assertion (Zod ya validó que existe)
-      password: validation.data.password!,
-      email: validation.data.email!,
-      fullname: validation.data.fullname!,
+      username: username!,
+      password: password!,
+      email: email!,
+      fullname: fullname!,
     });
 
-    if ('error' in newUser) {
-      throw new AppError(newUser.error, 409);
-    }
+    /**
+     * Usamos 'as UserWithPassword' porque el objeto que retorna el repo
+     * en el create (RETURNING *) sí contiene el password, aunque la
+     * interfaz User base no lo declare.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...publicUser } = newUser as UserWithPassword;
 
-    type PublicUser = Omit<User, 'password'>;
-    const publicUser: PublicUser = newUser;
     return res.status(201).json({ success: true, user: publicUser });
   }
 
   async updUser(req: Request, res: Response) {
     const { id, fullname, level, active } = req.body;
-
-    if (!id) {
-      throw new AppError('ID requerido', 400);
-    }
+    if (!id) throw new AppError('ID requerido', 400);
 
     const validation = validatePartialUser({ fullname, level, active });
     if (!validation.success) {
@@ -84,26 +73,15 @@ export class UserController {
       throw new AppError(errorMsg || 'Datos inválidos', 400);
     }
 
-    const input = {
-      ...(validation.data.fullname !== undefined && { fullname: validation.data.fullname }),
-      ...(validation.data.level !== undefined && { level: validation.data.level }),
-      ...(validation.data.active !== undefined && { active: validation.data.active }),
-    };
-
-    const updated = await userRepository.updUser({ id, input });
-    if ('error' in updated) {
-      throw new AppError(updated.error, 404);
-    }
+    const updated = await userRepository.updUser({ id, input: validation.data });
+    if (!updated) throw new AppError('Usuario no encontrado para actualizar', 404);
 
     return res.status(200).json({ success: true, user: updated });
   }
 
   async chgPassUser(req: Request, res: Response) {
     const { id, password } = req.body;
-
-    if (!id || !password) {
-      throw new AppError('ID y contraseña requeridos', 400);
-    }
+    if (!id || !password) throw new AppError('ID y contraseña requeridos', 400);
 
     const pwdCheck = validatePasswordDetailed(password);
     if (!pwdCheck.valid) {
@@ -111,27 +89,18 @@ export class UserController {
     }
 
     const result = await userRepository.chgPassUser({ id, input: { password } });
-
-    if ('error' in result) {
-      throw new AppError(result.error, 404);
-    }
+    if (!result) throw new AppError('Usuario no encontrado', 404);
 
     return res.status(200).json({ success: true, message: 'Contraseña actualizada correctamente' });
   }
 
   async deleteUser(req: Request, res: Response) {
     const { id } = req.body;
+    if (!id) throw new AppError('ID requerido', 400);
 
-    if (!id) {
-      throw new AppError('ID requerido', 400);
-    }
+    const success = await userRepository.deleteUser(id);
+    if (!success) throw new AppError('Usuario no encontrado o ya eliminado', 404);
 
-    const result = await userRepository.deleteUser(id);
-
-    if ('error' in result) {
-      throw new AppError(result.error, 404);
-    }
-
-    return res.status(200).json({ success: true, message: result.success });
+    return res.status(200).json({ success: true, message: 'Usuario eliminado correctamente' });
   }
 }

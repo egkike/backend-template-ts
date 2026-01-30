@@ -4,7 +4,7 @@ import { UserController } from '../controllers/user.controller';
 import { jwtAuthMiddleware } from '../middlewares/auth/jwt.middleware';
 import { restrictTo } from '../middlewares/auth/role.middleware';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
-import userRepository from '../repositories/user.repository';
+import { userRepository } from '../repositories/user.repository';
 
 const router = Router();
 
@@ -23,8 +23,8 @@ const userController = new UserController();
  *     summary: Obtiene la información de la sesión actual (usuario autenticado)
  *     tags: [Auth]
  *     description: |
- *       Devuelve los datos del usuario actualmente autenticado.  
- *       Requiere access_token válido en la cookie HttpOnly.  
+ *       Devuelve los datos del usuario actualmente autenticado.
+ *       Requiere access_token válido en la cookie HttpOnly.
  *       No necesita body ni parámetros adicionales.
  *     security:
  *       - cookieAuth: []
@@ -345,7 +345,7 @@ router.post('/user/create', restrictTo(5), userController.createUser); // Solo l
  *     summary: Actualiza datos de un usuario
  *     tags: [Users]
  *     description: |
- *       Requiere autenticación y permisos (level >= 5).  
+ *       Requiere autenticación y permisos (level >= 5).
  *       Solo actualiza los campos enviados (fullname, level, active).
  *     security:
  *       - cookieAuth: []
@@ -437,7 +437,7 @@ router.patch('/user/update', restrictTo(5), userController.updUser); // Solo lev
  *     summary: Cambia la contraseña del usuario
  *     tags: [Users]
  *     description: |
- *       Requiere autenticación JWT y permisos adecuados (level >= 5).  
+ *       Requiere autenticación JWT y permisos adecuados (level >= 5).
  *       La nueva contraseña debe cumplir requisitos de seguridad.
  *     security:
  *       - cookieAuth: []
@@ -509,7 +509,7 @@ router.patch('/user/chgpass', restrictTo(5), userController.chgPassUser); // Sol
  *     summary: Elimina un usuario por ID
  *     tags: [Users]
  *     description: |
- *       Requiere autenticación y permisos administrativos (level >= 5).  
+ *       Requiere autenticación y permisos administrativos (level >= 5).
  *       El ID se envía en el body.
  *     security:
  *       - cookieAuth: []
@@ -575,8 +575,8 @@ router.delete('/user/delete', restrictTo(5), userController.deleteUser); // Solo
  *     summary: Refresca el access token usando el refresh token
  *     tags: [Refresh]
  *     description: |
- *       Genera nuevos access_token y refresh_token (rotación).  
- *       Requiere que el refresh_token esté presente en las cookies y sea válido/no revocado.  
+ *       Genera nuevos access_token y refresh_token (rotación).
+ *       Requiere que el refresh_token esté presente en las cookies y sea válido/no revocado.
  *       Actualiza las cookies en la respuesta.
  *     security:
  *       - cookieAuth: []
@@ -606,64 +606,74 @@ router.delete('/user/delete', restrictTo(5), userController.deleteUser); // Solo
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/refresh', async (req, res) => {
-  const refreshToken = req.cookies.refresh_token;
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies.refresh_token;
 
-  if (!refreshToken) {
-    return res.status(401).json({ success: false, error: 'Refresh token requerido' });
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, error: 'Refresh token requerido' });
+    }
+
+    // 1. Validar el token y obtener el ID del usuario
+    const userId = await userRepository.validateRefreshToken(refreshToken);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Refresh token inválido, expirado o revocado',
+      });
+    }
+
+    // 2. Obtener el usuario.
+    // Ahora devuelve User | null. Validamos para quitar el error de TS.
+    const user = await userRepository.getById(userId);
+
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Usuario no encontrado' });
+    }
+
+    // 3. Preparar payload y generar nuevos tokens
+    const payload = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      fullname: user.fullname,
+      level: user.level,
+    };
+
+    const newAccessToken = generateAccessToken(payload);
+    const newRefreshToken = generateRefreshToken(payload);
+
+    // 4. Guardar el nuevo refresh token (Ajustado a la nueva firma del repo)
+    await userRepository.saveRefreshToken(
+      user.id,
+      newRefreshToken,
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    );
+
+    // 5. Setear cookies y responder
+    const isProd = process.env.NODE_ENV === 'production';
+
+    res.cookie('access_token', newAccessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', newRefreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({ success: true, message: 'Tokens refrescados' });
+  } catch (error) {
+    next(error);
   }
-
-  const userId = await userRepository.validateRefreshToken(refreshToken);
-
-  if (!userId) {
-    return res
-      .status(401)
-      .json({ success: false, error: 'Refresh token inválido, expirado o revocado' });
-  }
-
-  const user = await userRepository.getById(userId);
-  if ('error' in user) {
-    return res.status(401).json({ success: false, error: 'Usuario no encontrado' });
-  }
-
-  const payload = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    fullname: user.fullname,
-    level: user.level,
-    active: user.active,
-  };
-
-  const newAccessToken = generateAccessToken(payload);
-  const newRefreshToken = generateRefreshToken(payload);
-
-  await userRepository.saveRefreshToken({
-    userId: user.id,
-    token: newRefreshToken,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  });
-
-  // Revocamos el viejo inmediatamente (mejor seguridad)
-  //await userRepository.revokeRefreshToken(user.id);
-
-  res.cookie('access_token', newAccessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.cookie('refresh_token', newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  return res.status(200).json({ success: true, message: 'Tokens refrescados' });
 });
 
 export default router;
