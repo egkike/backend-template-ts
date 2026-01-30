@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-// Mock de config (evita ZodError en CI)
+// Mock de config
 vi.mock('../config/index', () => ({
   config: {
     jwt: {
@@ -22,38 +22,46 @@ vi.mock('../config/index', () => ({
     port: 3000,
   },
 }));
-// Mock completo de userRepository
-vi.mock('../repositories/user.repository.ts', () => ({
+// Mock de bcrypt: siempre pasa la comparación en tests
+vi.mock('bcrypt', () => ({
   default: {
-    login: vi.fn(async ({ username, password }) => {
-      if (username === 'admin' && password === 'Admin1') {
+    compare: vi.fn().mockResolvedValue(true),
+  },
+}));
+// Mock de userRepository
+vi.mock('../repositories/user.repository', () => ({
+  userRepository: {
+    findByCredentials: vi.fn(async (identifier: string) => {
+      if (identifier === 'admin') {
         return {
-          id: 'admin-id-mock',
+          id: 'a6288fe1-27a9-4775-b12d-65769d002896',
           username: 'admin',
           email: 'admin@midominio.com',
           fullname: 'Usuario Administrador',
+          password: 'hashed-admin-password',
           level: 5,
           active: 1,
           must_change_password: false,
         };
       }
-      if (username === 'testuser2' && password === 'Password123!') {
+      if (identifier === 'testuser2') {
         return {
           id: 'normal-id-mock',
           username: 'testuser2',
           email: 'testuser2@local.com',
           fullname: 'Usuario Test',
+          password: 'hashed-test-password',
           level: 1,
           active: 1,
           must_change_password: false,
         };
       }
-      return { error: 'Credenciales inválidas' };
+      return null;
     }),
     getUsers: vi.fn(async () => [
       { id: '1', username: 'user1', email: 'user1@test.com' },
       { id: '2', username: 'user2', email: 'user2@test.com' },
-    ]), // Devuelve array directamente (como probablemente lo hace tu API real)
+    ]),
     createUser: vi.fn(async data => {
       if (data.password.length < 6) {
         throw new AppError('Password debe tener al menos 6 caracteres', 400);
@@ -75,7 +83,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import supertest from 'supertest';
 
 import { app } from '../index';
-import { AppError } from '../errors/AppError'; 
+import { AppError } from '../errors/AppError';
 
 const request = supertest(app);
 

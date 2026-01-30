@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+// Mock de config
 vi.mock('../config/index', () => ({
   config: {
     jwt: {
@@ -21,27 +22,45 @@ vi.mock('../config/index', () => ({
     port: 3000,
   },
 }));
-vi.mock('../repositories/user.repository.ts', () => ({
+// Mock de bcrypt: siempre pasa la comparación en tests
+vi.mock('bcrypt', () => ({
   default: {
-    login: vi.fn(async ({ username, password }) => {
-      if (username === 'admin' && password === 'Admin1') {
+    compare: vi.fn().mockResolvedValue(true),
+  },
+}));
+// Mock de userRepository
+vi.mock('../repositories/user.repository', () => ({
+  userRepository: {
+    findByCredentials: vi.fn(async (identifier: string) => {
+      if (identifier === 'admin') {
         return {
-          id: 'admin-id-mock',
+          id: 'a6288fe1-27a9-4775-b12d-65769d002896',
           username: 'admin',
           email: 'admin@midominio.com',
           fullname: 'Usuario Administrador',
+          password: 'hashed-admin-password',
           level: 5,
           active: 1,
           must_change_password: false,
         };
       }
-      return { error: 'Credenciales inválidas' };
+      if (identifier === 'testuser2') {
+        return {
+          id: 'normal-id-mock',
+          username: 'testuser2',
+          email: 'testuser2@local.com',
+          fullname: 'Usuario Test',
+          password: 'hashed-test-password',
+          level: 1,
+          active: 1,
+          must_change_password: false,
+        };
+      }
+      return null;
     }),
     saveRefreshToken: vi.fn(async () => ({ success: true })),
     validateRefreshToken: vi.fn(async _ => {
-      if (isTokenRevoked) {
-        return null; // ¡Fix clave! Devuelve null para simular token inválido y forzar 401 en tu app code
-      }
+      if (isTokenRevoked) return null;
       return { userId: 'admin-id-mock', valid: true };
     }),
     revokeRefreshToken: vi.fn(async _ => {
@@ -62,7 +81,6 @@ import supertest from 'supertest';
 
 import { app } from '../index';
 
-// Variable de estado global para simular revocación
 let isTokenRevoked = false;
 
 const request = supertest(app);
