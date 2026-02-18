@@ -33,6 +33,9 @@ jobs:
       run: pnpm test
       env:
         NODE_ENV: test
+        SECRET_JWT_KEY: 'test-secret-super-largo-para-tests'
+        SECRET_REFRESH_JWT_KEY: 'test-secret-refresh-super-largo-para-tests'
+        PASSWORD_PEPPER: 'test-pepper'
 
     - name: Build project
       run: pnpm build

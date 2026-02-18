@@ -9,13 +9,14 @@ beforeAll(async () => {
   console.info('[Vitest Setup] Iniciando servidor de test...');
 
   return new Promise<void>((resolve, reject) => {
-    const port = 3000;
+    // Puerto random para evitar conflictos en CI
+    const port = 0; // 0 = sistema elige puerto libre
     server = app.listen(port, '0.0.0.0', () => {
       console.info(`[Vitest Setup] Servidor de test OK en http://localhost:${port}`);
       resolve();
     });
 
-    server.on('error', (err) => {
+    server.on('error', err => {
       console.error('[Vitest Setup] Error al levantar servidor:', err);
       reject(err);
     });
@@ -24,7 +25,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (server) {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>(resolve => {
       server.close(() => {
         console.info('[Vitest Setup] Servidor de test cerrado');
         resolve();
