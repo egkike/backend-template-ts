@@ -1,8 +1,8 @@
 -- 03-seed-data.sql
 
 -- Inserta datos iniciales en la tabla users (en schema 'public' por defecto)
--- Hash password = UnaNuevaClaveSegura2026! (Se recomienda cambiar por un hash propio en producción. 
--- Para esto el PASSWORD_PEPPER en .env debe ser: PASSWORD_PEPPER="App_SecurE_StronG_PeppeR_2026_!"
+-- Ingresa con UnaNuevaClaveSegura2026! (Se recomienda cambiar por uno propio en producción). 
+-- El pimienta usado fue: "App_SecurE_StronG_PeppeR_2026_!" (Se recomienda cambiar el pimienta y generar pass a partir de ahi).
 INSERT INTO users (username, password, email, fullname, level, active, must_change_password) VALUES 
 ('admin_app', '$2b$12$IN2ti71A/NuhtlX1APZmDuiogRT6StubhjLKbqcPlhM2NnlBB8kPS', 'admin@app.com', 'Super Administrador de App', 99, 1, false)
 ON CONFLICT (username) DO NOTHING;
