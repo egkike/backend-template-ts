@@ -50,7 +50,7 @@ export class UserController {
       throw new AppError(errorMsg || 'Datos inválidos', 400);
     }
 
-    const { password, email, fullname, level } = validation.data;
+    const { password, email, fullname, level, username } = validation.data;
     if (!password) throw new AppError('La contraseña es requerida', 400);
 
     const pwdCheck = validatePasswordDetailed(password);
@@ -60,6 +60,7 @@ export class UserController {
 
     // 1. Crear usuario (active = 0 + token)
     const newUser = await userRepository.createUser({
+      username,
       password: password!,
       email: email!,
       fullname: fullname!,

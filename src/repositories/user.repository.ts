@@ -26,8 +26,8 @@ export interface UserWithPassword extends UserBase {
 export interface CreateUserInput {
   email: string;
   fullname: string;
-  username?: string;
-  password?: string;
+  username?: string | undefined;
+  password?: string | undefined;
   level?: number;
   active?: number;
 }
