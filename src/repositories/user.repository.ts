@@ -26,6 +26,7 @@ export interface UserWithPassword extends UserBase {
 export interface CreateUserInput {
   email: string;
   fullname: string;
+  username?: string;
   password?: string;
   level?: number;
   active?: number;
@@ -120,12 +121,20 @@ export const userRepository = {
 
   async createUser(input: CreateUserInput) {
     const schema = config.db?.schema || 'public';
-    const { password, email, fullname, level = 1, active = 0 } = input;
+    const { password, email, fullname, level = 1, active = 0, username } = input;
 
-    const baseName = email.split('@')[0].substring(0, 15);
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    const generatedUsername = `${baseName}${randomSuffix}`;
-    const affiliateSlug = generatedUsername;
+    // LÓGICA DE USERNAME: Prioriza el enviado, de lo contrario genera uno.
+    let finalUsername: string;
+    if (username && username.trim() !== '') {
+      finalUsername = username.toLowerCase().trim();
+    } else {
+      const baseName = email.split('@')[0].substring(0, 15);
+      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      finalUsername = `${baseName}${randomSuffix}`;
+    }
+
+    // El slug de afiliado siempre coincide con el username final
+    const affiliateSlug = finalUsername;
 
     const mustChangePassword = Number(level) === 1;
     // Si no hay password (registro manual admin), generamos uno aleatorio temporal
@@ -145,7 +154,7 @@ export const userRepository = {
     `;
 
     const { rows } = await pool.query(query, [
-      generatedUsername,
+      finalUsername,
       affiliateSlug,
       hash,
       email,

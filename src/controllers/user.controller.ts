@@ -50,7 +50,7 @@ export class UserController {
       throw new AppError(errorMsg || 'Datos inválidos', 400);
     }
 
-    const { password, email, fullname } = validation.data;
+    const { password, email, fullname, level } = validation.data;
     if (!password) throw new AppError('La contraseña es requerida', 400);
 
     const pwdCheck = validatePasswordDetailed(password);
@@ -63,6 +63,7 @@ export class UserController {
       password: password!,
       email: email!,
       fullname: fullname!,
+      level: level || 1,
     });
 
     // 2. Enviar email de verificación
