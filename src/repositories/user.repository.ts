@@ -1,90 +1,185 @@
+import crypto from 'crypto';
+
 import bcrypt from 'bcrypt';
 
 import pool from '../db/postgres';
-import logger from '../utils/logger';
 import { config } from '../config/index';
 
-const schema = config.db.schema;
+// --- INTERFACES DE CONTRATO ---
 
-export interface User {
+export interface UserBase {
   id: string;
   username: string;
   email: string;
   fullname: string;
   level: number;
   active: number;
+  affiliate_slug: string;
   must_change_password: boolean;
   createdate: Date;
 }
 
-export interface UserWithPassword extends User {
+export interface UserWithPassword extends UserBase {
   password: string;
 }
 
+export interface CreateUserInput {
+  email: string;
+  fullname: string;
+  password?: string;
+  level?: number;
+  active?: number;
+}
+
+export interface UpdateUserInput {
+  fullname?: string;
+  level?: number;
+  active?: number;
+}
+
+export interface RefreshTokenRow {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  expires_at: Date;
+  revoked: boolean;
+  created_at: Date;
+}
+
 export const userRepository = {
+  /**
+   * Busca un usuario por username o email para el proceso de Login.
+   */
   async findByCredentials(identifier: string): Promise<UserWithPassword | null> {
+    const schema = config.db?.schema || 'public';
     const query = `
-      SELECT id, username, password, email, fullname, level, active, must_change_password, createdate
+      SELECT id, username, password, email, fullname, level, active, must_change_password, createdate, affiliate_slug
       FROM "${schema}".users 
       WHERE username = $1 OR email = $1
     `;
-    try {
-      const { rows } = await pool.query(query, [identifier]);
-      return rows[0] || null;
-    } catch (error: any) {
-      logger.error({ error: error.message, identifier }, 'DB Error: findByCredentials failed');
-      throw error;
-    }
+    const { rows } = await pool.query<UserWithPassword>(query, [identifier]);
+    return rows[0] || null;
   },
 
-  async getUsers(): Promise<User[]> {
-    try {
-      const { rows } = await pool.query(
-        `SELECT id, username, email, fullname, level, active, must_change_password, createdate
-         FROM "${schema}".users ORDER BY createdate DESC`
-      );
-      return rows;
-    } catch (error: any) {
-      logger.error({ error: error.message }, 'DB Error: getUsers failed');
-      throw error;
-    }
+  /**
+   * Obtiene la información pública/básica de un usuario por su ID.
+   */
+  async getById(id: string): Promise<UserBase | null> {
+    const schema = config.db?.schema || 'public';
+    const query = `SELECT id, username, email, fullname, level, active, must_change_password, createdate, affiliate_slug
+                   FROM "${schema}".users WHERE id = $1`;
+    const { rows } = await pool.query<UserBase>(query, [id]);
+    return rows[0] || null;
   },
 
-  async getById(id: string): Promise<User | null> {
-    try {
-      const { rows } = await pool.query(
-        `SELECT id, username, email, fullname, level, active, must_change_password, createdate
-         FROM "${schema}".users WHERE id = $1`,
-        [id]
-      );
-      return rows[0] || null;
-    } catch (error: any) {
-      logger.error({ id, error: error.message }, 'DB Error: getById failed');
-      throw error;
-    }
+  /**
+   * Obtiene lista de todos los usuarios
+   */
+  async getUsers(): Promise<UserBase[]> {
+    const schema = config.db?.schema || 'public';
+    const query = `SELECT id, username, email, fullname, level, active, createdate, affiliate_slug, must_change_password 
+                   FROM "${schema}".users ORDER BY createdate DESC`;
+    const { rows } = await pool.query<UserBase>(query);
+    return rows;
   },
 
-  async createUser(input: any): Promise<User> {
-    const { username, password, email, fullname } = input;
-    try {
-      const hash = await bcrypt.hash(password, 10);
-      const { rows } = await pool.query(
-        `INSERT INTO "${schema}".users (username, password, email, fullname)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, username, email, fullname, level, active, must_change_password, createdate`,
-        [username, hash, email, fullname]
-      );
-      return rows[0];
-    } catch (error: any) {
-      logger.error({ error: error.message }, 'DB Error: createUser failed');
-      throw error;
-    }
+  // --- MÉTODOS DE REFRESH TOKEN ---
+
+  async saveRefreshToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    const schema = config.db?.schema || 'public';
+    const query = `
+      INSERT INTO "${schema}".refresh_tokens (user_id, token_hash, expires_at)
+      VALUES ($1, $2, $3)
+    `;
+    await pool.query(query, [userId, tokenHash, expiresAt]);
   },
 
-  async updUser({ id, input }: { id: string; input: any }): Promise<User | null> {
+  async findRefreshToken(tokenHash: string): Promise<RefreshTokenRow | null> {
+    const schema = config.db?.schema || 'public';
+    const query = `
+      SELECT * FROM "${schema}".refresh_tokens 
+      WHERE token_hash = $1 AND revoked = FALSE AND expires_at > CURRENT_TIMESTAMP
+    `;
+    const { rows } = await pool.query<RefreshTokenRow>(query, [tokenHash]);
+    return rows[0] || null;
+  },
+
+  async deleteSpecificRefreshToken(tokenHash: string): Promise<void> {
+    const schema = config.db?.schema || 'public';
+    const query = `DELETE FROM "${schema}".refresh_tokens WHERE token_hash = $1`;
+    await pool.query(query, [tokenHash]);
+  },
+
+  async deleteRefreshToken(userId: string): Promise<void> {
+    const schema = config.db?.schema || 'public';
+    const query = `DELETE FROM "${schema}".refresh_tokens WHERE user_id = $1`;
+    await pool.query(query, [userId]);
+  },
+
+  // --- MÉTODOS DE GESTIÓN DE USUARIO ---
+
+  async createUser(input: CreateUserInput) {
+    const schema = config.db?.schema || 'public';
+    const { password, email, fullname, level = 1, active = 0 } = input;
+
+    const baseName = email.split('@')[0].substring(0, 15);
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const generatedUsername = `${baseName}${randomSuffix}`;
+    const affiliateSlug = generatedUsername;
+
+    const mustChangePassword = Number(level) === 1;
+    // Si no hay password (registro manual admin), generamos uno aleatorio temporal
+    const rawPassword = password || crypto.randomBytes(12).toString('hex');
+    const passwordWithPepper = rawPassword + config.passwordPepper;
+    const hash = await bcrypt.hash(passwordWithPepper, 12);
+
+    const verificationToken = active === 0 ? crypto.randomBytes(32).toString('hex') : null;
+    const expires = active === 0 ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
+
+    const query = `
+    INSERT INTO "${schema}".users 
+      (username, affiliate_slug, password, email, fullname, level, active, 
+       verification_token, verification_token_expires, must_change_password)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING id, username, affiliate_slug, email, fullname, level, active;
+    `;
+
+    const { rows } = await pool.query(query, [
+      generatedUsername,
+      affiliateSlug,
+      hash,
+      email,
+      fullname,
+      level,
+      active,
+      verificationToken,
+      expires,
+      mustChangePassword,
+    ]);
+
+    return { ...rows[0], verificationToken };
+  },
+
+  async verifyAccount(token: string): Promise<boolean> {
+    const schema = config.db?.schema || 'public';
+    const query = `
+      UPDATE "${schema}".users 
+      SET active = 1, verification_token = NULL, verification_token_expires = NULL
+      WHERE verification_token = $1 AND verification_token_expires > CURRENT_TIMESTAMP
+      RETURNING id
+    `;
+    const { rows } = await pool.query(query, [token]);
+    return rows.length > 0;
+  },
+
+  async updUser(
+    { id, input }: { id: string; input: UpdateUserInput },
+    client?: any
+  ): Promise<UserBase | null> {
+    const schema = config.db?.schema || 'public';
     const { fullname, level, active } = input;
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number)[] = [];
     let paramIndex = 1;
 
     if (fullname !== undefined) {
@@ -103,83 +198,85 @@ export const userRepository = {
     if (updates.length === 0) return this.getById(id);
 
     values.push(id);
-    const query = `UPDATE "${schema}".users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, fullname, level, active, must_change_password, createdate`;
+    const query = `UPDATE "${schema}".users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
 
-    try {
-      const { rows } = await pool.query(query, values);
-      return rows[0] || null;
-    } catch (error: any) {
-      logger.error({ id, error: error.message }, 'DB Error: updUser failed');
-      throw error;
-    }
+    const db = client || pool;
+    const { rows } = await db.query(query, values);
+
+    return (rows[0] as UserBase) || null;
   },
 
-  async chgPassUser({ id, input }: { id: string; input: any }): Promise<boolean> {
-    try {
-      const hash = await bcrypt.hash(input.password, 10);
-      const { rowCount } = await pool.query(
-        `UPDATE "${schema}".users SET password = $1, must_change_password = FALSE WHERE id = $2`,
-        [hash, id]
-      );
-      return rowCount !== null && rowCount > 0;
-    } catch (error: any) {
-      logger.error({ id, error: error.message }, 'DB Error: chgPassUser failed');
-      throw error;
-    }
+  async chgPassUser({ id, input }: { id: string; input: { password: string } }): Promise<void> {
+    const schema = config.db?.schema || 'public';
+    const passwordWithPepper = input.password + config.passwordPepper;
+    const hash = await bcrypt.hash(passwordWithPepper, 12);
+    const query = `UPDATE "${schema}".users SET password = $1, must_change_password = false WHERE id = $2`;
+    await pool.query(query, [hash, id]);
+  },
+
+  async updatePasswordAndClearFlag(id: string, passwordHash: string): Promise<boolean> {
+    const schema = config.db?.schema || 'public';
+    const query = `UPDATE "${schema}".users SET password = $1, must_change_password = false WHERE id = $2`;
+    const result = await pool.query(query, [passwordHash, id]);
+    return (result.rowCount ?? 0) > 0;
   },
 
   async deleteUser(id: string): Promise<boolean> {
-    try {
-      const { rowCount } = await pool.query(`DELETE FROM "${schema}".users WHERE id = $1`, [id]);
-      return rowCount !== null && rowCount > 0;
-    } catch (error: any) {
-      logger.error({ id, error: error.message }, 'DB Error: deleteUser failed');
-      throw error;
-    }
+    const schema = config.db?.schema || 'public';
+    const query = `DELETE FROM "${schema}".users WHERE id = $1`;
+    const result = await pool.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
   },
 
-  async saveRefreshToken(userId: string, token: string, expiresAt: Date): Promise<void> {
-    try {
-      const hash = await bcrypt.hash(token, 10);
-      await pool.query(
-        `INSERT INTO "${schema}".refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
-        [userId, hash, expiresAt]
-      );
-    } catch (error: any) {
-      logger.error({ error: error.message }, 'DB Error: saveRefreshToken failed');
-      throw error;
-    }
+  async validateRefreshToken(tokenHash: string): Promise<string | null> {
+    const token = await this.findRefreshToken(tokenHash);
+    return token ? token.user_id : null;
   },
 
-  async validateRefreshToken(token: string): Promise<string | null> {
-    try {
-      const { rows } = await pool.query(
-        `SELECT user_id, token_hash FROM "${schema}".refresh_tokens 
-         WHERE revoked IS FALSE AND expires_at > NOW()`
-      );
-
-      for (const row of rows) {
-        if (await bcrypt.compare(token, row.token_hash)) return row.user_id;
-      }
-      return null;
-    } catch (error: any) {
-      logger.error({ error: error.message }, 'DB Error: validateRefreshToken failed');
-      return null;
-    }
+  async saveResetToken(
+    email: string,
+    token: string,
+    expires: Date
+  ): Promise<{ id: string } | null> {
+    const schema = config.db?.schema || 'public';
+    const query = `
+      UPDATE "${schema}".users 
+      SET reset_password_token = $1, reset_password_expires = $2
+      WHERE email = $3
+      RETURNING id;
+    `;
+    const { rows } = await pool.query<{ id: string }>(query, [token, expires, email]);
+    return rows[0] || null;
   },
 
-  // ESTE ES EL MÉTODO QUE FALTABA
-  async revokeRefreshToken(userId: string): Promise<void> {
-    try {
-      await pool.query(
-        `UPDATE "${schema}".refresh_tokens 
-         SET revoked = TRUE, revoked_at = NOW() 
-         WHERE user_id = $1 AND revoked = FALSE`,
-        [userId]
-      );
-    } catch (error: any) {
-      logger.error({ error: error.message, userId }, 'DB Error: revokeRefreshToken failed');
-      throw error;
-    }
+  async resetPasswordByToken(token: string, newPasswordHash: string): Promise<boolean> {
+    const schema = config.db?.schema || 'public';
+    const query = `
+      UPDATE "${schema}".users 
+      SET password = $1, 
+          reset_password_token = NULL, 
+          reset_password_expires = NULL,
+          must_change_password = false
+      WHERE reset_password_token = $2 AND reset_password_expires > CURRENT_TIMESTAMP
+      RETURNING id;
+    `;
+    const { rows } = await pool.query(query, [newPasswordHash, token]);
+    return rows.length > 0;
+  },
+
+  async findByAffiliateSlug(
+    slug: string
+  ): Promise<Pick<UserBase, 'id' | 'username' | 'affiliate_slug'> | null> {
+    const schema = config.db?.schema || 'public';
+    const query = `
+      SELECT id, username, affiliate_slug 
+      FROM "${schema}".users 
+      WHERE affiliate_slug = $1 OR id::text = $1 
+      LIMIT 1
+    `;
+    const { rows } = await pool.query<Pick<UserBase, 'id' | 'username' | 'affiliate_slug'>>(query, [
+      slug,
+    ]);
+    return rows[0] || null;
   },
 };

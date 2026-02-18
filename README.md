@@ -25,6 +25,8 @@ Ideal para iniciar proyectos reales, APIs REST seguras o como base reutilizable.
 - Helmet + CSP (seguridad HTTP)
 - Rate limiting por ruta y usuario (express-rate-limit)
 - Permisos por nivel (middleware restrictTo)
+- Email service con nodemailer
+- Cron Jobs con node-cron
 
 ## Arquitectura rápida
 
@@ -66,39 +68,7 @@ pnpm install
 cp .env.example .env
 ```
 
-4. Edita `.env` con tus valores (ver sección Configuración)
-
-## Configuración (.env)
-
-```env
-# Puerto del servidor
-PORT=3000
-
-# Entorno
-NODE_ENV=development  # o production
-
-# Base de datos PostgreSQL
-POSTGRES_USER=app_user
-POSTGRES_PASSWORD=tu_password
-POSTGRES_DB=app_db
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=app_user
-DB_PASSWORD=tu_password
-DB_NAME=app_db
-DB_SCHEMA=public
-
-# JWT
-SECRET_JWT_KEY=your-very-long-and-secure-secret-here-min-128-chars
-JWT_ACCESS_EXPIRY=15m
-JWT_REFRESH_EXPIRY=7d
-
-# CORS (separados por coma)
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
-
-# Opcional: para producción
-TRUST_PROXY=true  # si usas reverse proxy (nginx, etc.)
-```
+4. Edita `.env` con tus valores
 
 ## Base de datos (PostgreSQL)
 - Las tablas se crean a partir de los scripts de `./db/init/*.sql`, cuando corre `docker-compose.yml`.
@@ -161,6 +131,7 @@ backend-template-ts/
 │   ├── repositories  # Acceso a DB (user.repository.ts)
 │   ├── routes        # Rutas (auth.routes.ts, user.routes.ts)
 │   ├── schemas       # Zod schemas (users.ts)
+│   ├── services      # Servicios
 │   ├── types         # Tipos TypeScript
 │   ├── utils         # JWT, logger, etc.
 │   └── index.ts      # Entrada principal (app Express)

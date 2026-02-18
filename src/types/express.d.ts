@@ -4,21 +4,28 @@
 
 import { JwtPayload } from 'jsonwebtoken';
 
-// Extendemos el tipo Request de Express para incluir el usuario autenticado
-declare module 'express-serve-static-core' {
-  interface Request {
-    // Usuario autenticado (después de verificar el JWT)
-    user?: {
-      id: string;
-      username: string;
-      email: string;
-      fullname: string;
-      level: number;
-      active: number;
-    } & Partial<JwtPayload>; // Partial para claims opcionales del JWT
-    rateLimit?: {
-      key: string;
-      // ... otros campos si usas
-    };
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        username: string;
+        email: string;
+        fullname?: string;
+        level: number;
+        active: number;
+        affiliate_slug?: string;
+        iat?: number;
+      } & Partial<JwtPayload> | undefined;
+      rateLimit?: {
+        key: string;
+        limit: number;
+        current: number;
+        remaining: number;
+        resetTime: Date;
+      };
+    }
   }
 }
+
+export {};

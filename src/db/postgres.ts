@@ -53,15 +53,17 @@ async function connectWithRetry(maxRetries = 20, delayMs = 3000) {
   throw new Error(errorMsg);
 }
 
-// Inicialización automática al cargar el módulo
-(async () => {
-  try {
-    await connectWithRetry();
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    logger.error(`Inicialización de DB fallida - saliendo: ${errorMessage}`);
-    process.exit(1);
-  }
-})();
+// Inicialización automática al cargar el módulo (SOLO SI NO ES TEST)
+if (config.nodeEnv !== 'test') {
+  (async () => {
+    try {
+      await connectWithRetry();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.error(`Inicialización de DB fallida - saliendo: ${errorMessage}`);
+      process.exit(1);
+    }
+  })();
+}
 
 export default pool;

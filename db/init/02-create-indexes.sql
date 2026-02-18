@@ -1,4 +1,4 @@
--- 03-create-indexes.sql
+-- 02-create-indexes.sql
 -- Crea índices útiles sobre las tablas principales (en schema 'public' por defecto)
 -- No usamos schema custom para mantener el template simple y estándar
 

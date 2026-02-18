@@ -4,6 +4,7 @@ node_modules/
 .pnpm-debug.log
 
 # Datos de PostgreSQL (no subir)
+test/
 postgres-data/
 postgres-data*  # cubre postgres-data-clean, etc.
 

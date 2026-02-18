@@ -3,41 +3,56 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
+import cron from 'node-cron';
 
+import swaggerSpecs from './swagger';
 import { loginLimiter, refreshLimiter, apiLimiter } from './middlewares/rateLimit';
 import { AppError } from './errors/AppError';
 import { config } from './config/index';
 import logger from './utils/logger';
+import { AuthCleanupService } from './services/auth.cleanup.service';
 // Importamos las rutas
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 
 const app = express();
 
-// Helmet: añade headers de seguridad recomendados
+// --- CONFIGURACIÓN DE PROXY Y PARSERS ---
+app.set('trust proxy', 1);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// --- HELMET & SECURITY (Completo como lo tenías) ---
 app.use(
   helmet({
-    // CSP ajustado - permite recursos locales + algunos externos comunes
     contentSecurityPolicy: {
-      useDefaults: true, // mantiene los valores por defecto seguros
+      useDefaults: true,
       directives: {
-        defaultSrc: ["'self'"], // solo recursos de tu dominio
-        //scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'], // sin unsafe-inline/eval
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net'], // permite scripts inline, eval (si usas React/Vue), y CDN ejemplo
-        //styleSrc: ["'self'"], // sin unsafe-inline
-        styleSrc: ["'self'", "'unsafe-inline'"], // permite estilos inline (necesario para muchos frameworks)
-        imgSrc: ["'self'", 'data:', 'https://images.unsplash.com', 'https://via.placeholder.com'], // imágenes locales, data URLs, y ejemplos
-        connectSrc: ["'self'", 'https://api.tu-dominio.com', 'wss://tu-dominio.com'], // Si conectas a otra API externa o WebSockets
-        fontSrc: ["'self'", 'data:', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'], // fuentes de Google Fonts
-        objectSrc: ["'none'"], // bloquea objetos (muy seguro)
-        frameAncestors: ["'self'"], // evita clickjacking
-        formAction: ["'self'"], // formularios solo a tu dominio
-        upgradeInsecureRequests: [], // fuerza HTTPS
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          'https://cdn.jsdelivr.net',
+          'https://*.mercadopago.com',
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https://images.unsplash.com', 'https://via.placeholder.com'],
+        connectSrc: ["'self'", 'https://*.mercadopago.com'],
+        fontSrc: [
+          "'self'",
+          'data:',
+          'https://fonts.googleapis.com',
+          'https://fonts.gstatic.com',
+          'https://*.mercadopago.com',
+        ],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+        formAction: ["'self'"],
+        upgradeInsecureRequests: [],
       },
     },
-
-    // Otros headers de Helmet (mantén o ajusta según necesites)
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginEmbedderPolicy: false,
@@ -46,42 +61,22 @@ app.use(
     frameguard: { action: 'deny' },
     hsts:
       config.nodeEnv === 'production'
-        ? {
-            maxAge: 31536000, // 1 año
-            includeSubDomains: true,
-            preload: true,
-          }
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
         : false,
   })
 );
 
-// Middlewares globales
-app.use(express.json());
-app.use(cookieParser());
-
-// CORS usando configuración validada
+// --- CORS ---
 app.use(
   cors({
-    origin: config.cors.origins,
+    origin: config.cors?.origins || true,
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-// Rate limiting específico por ruta
-app.use('/api/login', loginLimiter); // Protege login
-app.use('/api/refresh', refreshLimiter); // Protege refresh
-// Rate limiting general para rutas protegidas (opcional)
-app.use('/api', apiLimiter); // Aplica a todo /api después de login/refresh
-
-// Rutas públicas (login, logout - sin autenticación)
-app.use('/api', authRoutes);
-
-// Rutas protegidas (todas las operaciones de usuarios - con jwt middleware dentro del router)
-app.use('/api', userRoutes);
-
-// Ruta de health check (útil para monitoreo y pruebas rápidas)
+// --- RUTAS DE SALUD ---
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
@@ -97,128 +92,72 @@ app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'Backend Template TS - Todo listo 🚀' });
 });
 
-// Swagger UI - Documentación interactiva
-// Solo en desarrollo o staging (no en producción real)
-if (config.nodeEnv !== 'production') {
-  const swaggerOptions = {
-    definition: {
-      openapi: '3.0.0',
-      info: {
-        title: 'API Template',
-        version: '1.0.0',
-        description: 'API REST Template para gestión de usuarios',
-      },
-      servers: [
-        {
-          url: 'http://localhost:3000',
-          description: 'Servidor de desarrollo',
-        },
-      ],
-      components: {
-        schemas: {
-          ErrorResponse: {
-            type: 'object',
-            properties: {
-              success: {
-                type: 'boolean',
-                example: false,
-              },
-              error: {
-                type: 'string',
-                example: 'Credenciales inválidas',
-              },
-              // Agrega más campos si tu error tiene (ej: message, details)
-            },
-            required: ['success', 'error'],
-          },
-          // Agrega otros schemas si usas $ref en más lugares
-        },
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-          },
-        },
-      },
-    },
-    apis: [
-      './src/routes/*.ts', // Rutas con comentarios JSDoc
-      './src/controllers/*.ts', // Controladores con comentarios
-      // Agrega más si tienes otros archivos con @swagger
-    ],
-  };
-
-  const swaggerSpecs = swaggerJsdoc(swaggerOptions);
-
-  // Ruta Swagger solo en dev
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
-} else {
-  logger.info('Swagger desactivado en producción (seguridad)');
+// --- RATE LIMITING (Solo fuera de tests para evitar inesperados) ---
+if (config.nodeEnv !== 'test') {
+  app.use('/api/auth/login', loginLimiter);
+  app.use('/api/auth/refresh', refreshLimiter);
+  app.use('/api', apiLimiter);
 }
 
-// 404 - Ruta no encontrada (lanzamos AppError para que pase al handler global)
+// --- DEFINICIÓN DE RUTAS ---
+app.use('/api/auth', authRoutes);
+app.use('/api', userRoutes);
+
+// --- SWAGGER DOCS ---
+if (config.nodeEnv !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+}
+
+// --- ERROR HANDLING ---
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError('Ruta no encontrada', 404));
 });
 
 // Error handler global profesional
 app.use((err: any, req: Request, res: Response, _: NextFunction) => {
-  // Si es un error controlado (AppError)
   if (err instanceof AppError) {
     logger.warn(
-      {
-        status: err.statusCode,
-        message: err.message,
-        path: req.path,
-        method: req.method,
-      },
-      'Error controlado manejado'
+      { status: err.statusCode, message: err.message, path: req.path },
+      'Error controlado'
     );
-
-    return res.status(err.statusCode).json({
-      success: false,
-      error: err.message,
-    });
+    return res.status(err.statusCode).json({ success: false, error: err.message });
   }
 
-  // Errores inesperados (cualquier cosa que no sea AppError)
   const statusCode = err.status || 500;
-  const message = err.message || 'Error interno del servidor';
+  logger.error({ error: err.message, stack: err.stack, path: req.path }, 'Error inesperado');
 
-  logger.error(
-    {
-      error: err.message || err.toString(),
-      stack: err.stack,
-      path: req.path,
-      method: req.method,
-    },
-    'Error inesperado en el servidor'
-  );
-
-  // Respuesta segura (más detalles solo en desarrollo)
-  const response = {
+  res.status(statusCode).json({
     success: false,
-    error: message,
-  };
-
-  if (config.nodeEnv === 'development') {
-    Object.assign(response, {
-      stack: err.stack,
-      details: err.details || null,
-    });
-  }
-
-  res.status(statusCode).json(response);
+    error: err.message || 'Error interno del servidor',
+    ...(config.nodeEnv === 'development' && { stack: err.stack }),
+  });
 });
 
-// Iniciar servidor
-const PORT = config.port;
+// --- PROCESOS DE ARRANQUE Y CRONS (Excluidos en Test) ---
+if (config.nodeEnv !== 'test') {
+  // CRON: Limpieza de Tokens expirados
+  cron.schedule('0 3 * * *', async () => {
+    await AuthCleanupService.cleanExpiredTokens();
+  });
+}
 
-app.listen(PORT, () => {
-  logger.info(`🚀 Servidor escuchando en http://localhost:${PORT}`);
-  logger.info(`Entorno: ${config.nodeEnv}`);
-  logger.info(`CORS permitidos: ${config.cors.origins.join(', ')}`);
+// --- START SERVER ---
+let server: any;
+if (config.nodeEnv !== 'test') {
+  server = app.listen(config.port, () => {
+    logger.info(`🚀 Servidor en puerto ${config.port} (${config.nodeEnv})`);
+  });
+}
+
+process.on('SIGTERM', () => {
+  if (server) {
+    server.close(() => {
+      logger.info('Servidor HTTP cerrado.');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
 });
 
 export { app };

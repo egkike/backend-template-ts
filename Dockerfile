@@ -33,6 +33,4 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-# CMD con resolución de módulos sin extensión (Node 22+ con bundler debería funcionar)
-#CMD ["node", "--experimental-specifier-resolution=node", "dist/index.js"]
 CMD ["node", "dist/index.js"]

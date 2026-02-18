@@ -1,20 +1,21 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 
+import { config } from './config/index';
+
 const swaggerOptions: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Backend Template TS API',
+      title: 'Crema Fintech API',
       version: '1.0.0',
-      description:
-        'API REST con autenticación JWT (access + refresh token), roles, rate limiting y PostgreSQL',
+      description: 'API para gestión de productos digitales, comisiones y retiros.',
       contact: {
-        name: 'Kike Garcia',
+        name: 'Soporte Crema',
       },
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: `http://localhost:${config.port}`,
         description: 'Servidor local (development)',
       },
     ],
@@ -31,39 +32,18 @@ const swaggerOptions: swaggerJsdoc.Options = {
         ErrorResponse: {
           type: 'object',
           properties: {
-            success: {
-              type: 'boolean',
-              example: false,
-            },
-            error: {
-              type: 'string',
-              example: 'ID requerido',
-            },
-            message: {
-              type: 'string',
-              example: 'Se requiere autenticación (token no presente)',
-              description: 'Mensaje adicional opcional',
-            },
+            success: { type: 'boolean', example: false },
+            error: { type: 'string', example: 'Mensaje de error' },
           },
           required: ['success', 'error'],
         },
-        // Puedes agregar más esquemas reutilizables aquí, ej: User, TokenResponse, etc.
       },
     },
-    security: [
-      {
-        cookieAuth: [],
-      },
-    ],
-    tags: [
-      { name: 'Auth', description: 'Autenticación y sesión' },
-      { name: 'Users', description: 'Operaciones con usuarios (protegidas)' },
-      { name: 'Refresh', description: 'Refresco de tokens' },
-    ],
+    // Esto aplica seguridad global a todos los endpoints en la UI de Swagger
+    security: [{ cookieAuth: [] }],
   },
-  apis: ['./src/routes/*.ts', './src/controllers/*.ts'], // rutas y controladores donde leer comentarios JSDoc
+  apis: ['./src/routes/*.ts', './src/controllers/*.ts'],
 };
 
 const swaggerSpecs = swaggerJsdoc(swaggerOptions);
-
 export default swaggerSpecs;
