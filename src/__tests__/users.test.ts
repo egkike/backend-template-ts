@@ -42,6 +42,26 @@ describe('Users API', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
 
+    // Espera hasta que el servidor responda OK en /health (máximo 10 segundos)
+    let ready = false;
+    const start = Date.now();
+
+    while (!ready && Date.now() - start < 10000) {
+      try {
+        const health = await request.get('/health');
+        if (health.status === 200) {
+          ready = true;
+        }
+      } catch {
+        // Ignora errores y reintenta
+      }
+      if (!ready) await new Promise(r => setTimeout(r, 300)); // espera 300ms entre intentos
+    }
+
+    if (!ready) {
+      throw new Error('Servidor no levantó en tiempo (timeout 10s)');
+    }
+
     // LOGIN ADMIN
     const resAdmin = await request
       .post('/api/auth/login')
