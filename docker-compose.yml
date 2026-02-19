@@ -2,8 +2,11 @@ version: '3.9'
 
 services:
   api:
-    image: node-ts-api  # Imagen genérica (cámbiala por el nombre de tu proyecto en Dockerfile si lo tenés)
-    container_name: api
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    container_name: app-api
     network_mode: "host"
     dns:
       - 8.8.8.8
@@ -29,6 +32,8 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - "5432:5432" # Mapeo necesario para que la API en modo 'host' lo vea en localhost  
     volumes:
       - ./postgres-data:/var/lib/postgresql       # Persistencia de datos
       - ./db/init:/docker-entrypoint-initdb.d     # Scripts automáticos (solo primera vez)
@@ -54,9 +59,6 @@ services:
       - db
     networks:
       - app-network
-    # Opcional: volumen para persistir config de pgAdmin
-    # volumes:
-    #   - pgadmin-data:/var/lib/pgadmin
 
 networks:
   app-network:

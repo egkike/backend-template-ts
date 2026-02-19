@@ -1,9 +1,11 @@
 # Etapa 1: Construcción (builder)
-FROM node:22 AS builder
+FROM node:22-slim AS builder
+RUN apt-get update && apt-get upgrade -y
 
 WORKDIR /app
 
-RUN npm install -g npm@latest pnpm@latest
+# Instalar pnpm (node 22 ya trae un npm moderno)
+RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
 COPY tsconfig.json tsconfig.build.json ./
@@ -12,8 +14,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY src/ ./src/
 
-# Compila con tsconfig.build.json
-#RUN pnpm tsc --build tsconfig.build.json
+# Compila el proyecto
 RUN pnpm build
 
 # Verificamos que dist exista (debug opcional)
@@ -21,6 +22,9 @@ RUN ls -la dist || echo "dist no generado!"
 
 # Etapa 2: Imagen final
 FROM node:22-alpine
+# FIX SEGURIDAD: Actualiza los paquetes internos de Alpine (como ssl o musl)
+# apk upgrade aplica los parches de seguridad más recientes disponibles
+RUN apk update && apk upgrade --no-cache
 
 WORKDIR /app
 

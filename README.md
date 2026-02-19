@@ -88,14 +88,11 @@ pnpm test:watch   # Tests en modo watch
 pnpm test:coverage # Tests + reporte de cobertura
 ```
 
-## Desarrollo con Docker (recomendado)
+## Para el Despliegue con Docker (recomendado)
 
 ```bash
-# Construir imagen (usa --network host si tienes problemas de DNS)
-docker build -t node-ts-api -f Dockerfile --network host --no-cache .
-
-# Levantar todo (API + DB + pgAdmin opcional)
-docker-compose up -d
+# Construir imagen y Levantar todo (API + DB + pgAdmin opcional)
+docker-compose up --build -d
 ```
 
 **Acceso**:
@@ -103,17 +100,21 @@ docker-compose up -d
 - Health: http://localhost:3000/health
 - Swagger (solo dev): http://localhost:3000/api-docs
 - pgAdmin: http://localhost:5050 (admin@local.com / admin)
-- PostgreSQL: localhost:5432 (user: postgres, pass: del .env)
+- PostgreSQL: localhost:5432 (db: del .env, user: del .env, pass: del .env)
 
 **Inicialización automática de la DB**:
 - La primera vez que se levanta el contenedor db (cuando `./postgres-data` está vacío o no existe), Postgres ejecuta automáticamente todos los archivos `.sql` en la carpeta `./db/init` (en orden alfabético).
-- Esto crea el schema, tablas, índices y datos iniciales (seed) sin intervención manual.
+- Esto crea las tablas, índices y datos iniciales (seed) sin intervención manual.
 - En arranques posteriores (con datos ya existentes), los scripts se ignoran (comportamiento estándar de la imagen oficial de Postgres).
 
 ```bash
 # Detener todo y eliminar los contenedores y la red (No borra el volúmen de datos en ./postgres-data):
-
 docker-compose down
+```
+
+```bash
+# Volver a levantar todos los contenedores sin build:
+docker-compose up -d
 ```
 
 ## Estructura de carpetas
