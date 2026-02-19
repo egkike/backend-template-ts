@@ -1,9 +1,9 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { Transporter } from 'nodemailer';
 
 import { config } from '../config/index';
 import logger from '../utils/logger';
 
-let transporter: any;
+let transporter: Transporter;
 
 // >>> Inicialización segura del transporte <<<
 try {
@@ -19,7 +19,10 @@ try {
       connectionTimeout: 10000,
     });
   } else {
-    transporter = { sendMail: async () => ({ messageId: 'test-id' }) };
+    // Usamos 'as any' para que en tests no pida todas las propiedades de Nodemailer
+    transporter = {
+      sendMail: async () => ({ messageId: 'test-id' }),
+    } as any;
   }
 } catch {
   logger.error('❌ Error crítico inicializando el transporte de Email');
@@ -27,6 +30,10 @@ try {
 
 export class EmailService {
   private static async send(to: string, subject: string, html: string) {
+    if (!transporter) {
+      logger.error('❌ Intento de envío de email fallido: Transporter no inicializado');
+      return false;
+    }
     try {
       const info = await transporter.sendMail({
         from: `"App" <${config.smtp.from}>`, // Nombre personalizado en la bandeja
