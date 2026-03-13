@@ -1,8 +1,8 @@
 name: CI - Lint, Test & Build
 
 on:
-  push:
-    branches: [ master ]
+#  push:
+#    branches: [ master ]
   pull_request:
     branches: [ master ]
 
