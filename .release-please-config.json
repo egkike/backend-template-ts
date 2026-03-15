@@ -3,8 +3,9 @@
     ".": {
       "release-type": "node",
       "package-name": "backend-template-ts",
-      "version-file": "package.json",
-      "tag-prefix": "v"
+      "component": "backend",
+      "tag-prefix": "v",
+      "initial-version": "1.1.0"
     }
   }
 }
