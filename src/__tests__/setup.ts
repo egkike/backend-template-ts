@@ -26,6 +26,7 @@ vi.mock('../config/index', () => ({
     frontendUrl: 'http://localhost:5173',
     daysOfGuarantee: 7,
     nodeEnv: 'test',
+    recaptchaSecretKey: undefined,
   },
 }));
 
@@ -39,7 +40,44 @@ vi.mock('../db/postgres', () => ({
   },
 }));
 
-// 3. Mock de EMAIL (Nodemailer)
+// 3. Mock de repositories
+vi.mock('../repositories/user.repository', () => ({
+  userRepository: {
+    findByCredentials: vi.fn(),
+    findByEmail: vi.fn(),
+    findById: vi.fn(),
+    getUsers: vi.fn(),
+    getById: vi.fn(),
+    createUser: vi.fn(),
+    updUser: vi.fn(),
+    deleteUser: vi.fn(),
+    chgPassUser: vi.fn(),
+    saveRefreshToken: vi.fn(),
+    findRefreshToken: vi.fn(),
+    deleteSpecificRefreshToken: vi.fn(),
+    verifyAccount: vi.fn(),
+    saveResetToken: vi.fn(),
+    resetPasswordByToken: vi.fn(),
+    updatePasswordAndClearFlag: vi.fn(),
+  },
+}));
+
+vi.mock('../repositories/config.repository', () => {
+  // Caché en memoria para los tests
+  const mockLevels = { GUEST: 0, USER: 1, STAFF: 5, ADMIN: 99 };
+
+  return {
+    configRepository: {
+      getUserLevels: vi.fn().mockResolvedValue(mockLevels),
+      clearLevelsCache: vi.fn(),
+      getSetting: vi.fn().mockResolvedValue(JSON.stringify(mockLevels)),
+      setSetting: vi.fn().mockResolvedValue(true),
+      getSystemSettings: vi.fn().mockResolvedValue({}),
+    },
+  };
+});
+
+// 4. Mock de EMAIL (Nodemailer)
 vi.mock('nodemailer', () => ({
   default: {
     createTransport: vi.fn().mockReturnValue({
