@@ -35,7 +35,6 @@ pnpm-debug.log*
 *.sublime-workspace
 .DS_Store
 Thumbs.db
-AGENTS.md
 
 # Tests y cobertura
 coverage/
@@ -71,3 +70,10 @@ migrations/
 # Archivos generados por herramientas
 tsconfig.tsbuildinfo
 .eslintrc.js.cache
+
+# GGA (Gentleman Guardian Angel)
+.gga/cache/
+.gga/temp/
+
+# Turborepo (Si terminas usándolo en tu monorepo)
+.turbo/
