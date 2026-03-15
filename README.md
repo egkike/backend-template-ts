@@ -182,6 +182,13 @@ Request → Routes → Middlewares → Controllers → Services → Repositories
 backend-template-ts/
 ├── db/
 │   └── init/                  # Scripts SQL de inicialización
+├── docs/                      # Documentación
+│   ├── architecture
+│   │   └── overview.md
+│   ├── guides
+│   │   └── setup.md
+│   └── reference
+│       └── environment.md
 ├── src/
 │   ├── __tests__/             # Tests con Vitest
 │   ├── config/                # Configuración (Zod env validation)
