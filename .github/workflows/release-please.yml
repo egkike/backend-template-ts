@@ -1,0 +1,34 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Tipo de proyecto
+          release-type: node
+          
+          # Define la rama principal explícitamente
+          target-branch: master
+          
+          # Configuración adicional para mayor control
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # Si el release fue creado, puedes disparar otras tareas
+      # como publicar en un registro privado o desplegar a producción.
+      - name: Post-Release Actions
+        if: ${{ steps['release'].outputs.release_created }}
+        run: |
+          echo "La versión ${{ steps['release'].outputs.tag_name }} ha sido liberada."

@@ -1,0 +1,9 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "backend-template-ts",
+      "initial-version": "1.0.1"
+    }
+  }
+}
