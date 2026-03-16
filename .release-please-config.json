@@ -1,12 +1,11 @@
 {
   "packages": {
-    "api-backend": {
+    ".": {
       "release-type": "node",
       "package-name": "backend-template-ts",
       "tag-prefix": "v",
       "initial-version": "1.1.0",
-      "changelog-path": "CHANGELOG.md"
+      "last-release-sha": "96ee93892e3e7fd3b54ab5eb95bb92ef8c8fa272"
     }
-  },
-  "bootstrap-sha": "a4b3472"
+  }
 }
