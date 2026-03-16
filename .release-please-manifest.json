@@ -1,3 +1,4 @@
 {
-  "api-backend": "1.1.0"
+  "api-backend": "1.1.0",
+  ".": "1.2.0-base"
 }
