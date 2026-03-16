@@ -3,9 +3,10 @@
     ".": {
       "release-type": "node",
       "package-name": "backend-template-ts",
-      "component": "backend",
       "tag-prefix": "v",
+      "include-component-in-tag": false,
       "initial-version": "1.1.0"
     }
-  }
+  },
+  "plugins": []
 }
